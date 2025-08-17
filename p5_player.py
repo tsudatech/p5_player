@@ -304,7 +304,7 @@ if __name__ == "__main__":
         width=1000,
         height=1000,
         x=0,
-        y=0,
+        y=250,
         frameless=True,
         transparent=True,
         on_top=True,
@@ -315,9 +315,9 @@ if __name__ == "__main__":
         "editor_window.html",
         js_api=editor_api,
         width=1000,
-        height=1200,
+        height=1000,
         x=1000,
-        y=0,
+        y=250,
         on_top=True,
     )
 
@@ -332,4 +332,6 @@ if __name__ == "__main__":
         on_top=True,
     )
 
-    webview.start(debug=True)
+    webview.start(
+        # debug=True
+    )
