@@ -1,0 +1,214 @@
+body {
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+#sidebar {
+  width: 300px;
+  min-width: 250px;
+  max-width: 400px;
+  background: #f0f0f0;
+  padding: 10px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+#editor {
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+}
+
+button {
+  margin: 5px 0;
+  width: 100%;
+}
+
+.block-item {
+  padding: 5px;
+  cursor: pointer;
+  background: #ddd;
+  margin: 5px 0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  user-select: none;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.block-item:hover {
+  background: #ccc;
+}
+
+.block-item.active {
+  background: #aaa;
+  border-color: #666;
+}
+
+.block-item.dragging {
+  opacity: 0.5;
+  background: #999;
+}
+
+.block-item.drag-over {
+  background: #b0b0b0;
+  border-color: #888;
+}
+
+.drag-handle {
+  cursor: grab;
+  margin-right: 5px;
+  color: #666;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.block-name {
+  flex: 0 1 auto;
+  margin-left: 5px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.block-name:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.block-name.editing {
+  background: white;
+  border: 1px solid #007acc;
+  border-radius: 2px;
+  padding: 2px 4px;
+  outline: none;
+}
+
+.delete-button {
+  margin-left: auto;
+  margin-right: 5px;
+  background: transparent;
+  color: #666;
+  border: none;
+  border-radius: 2px;
+  padding: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.delete-button:hover {
+  opacity: 1;
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+}
+
+.delete-button:active {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff0000;
+}
+
+.delete-button.confirm {
+  background: rgba(255, 0, 0, 0.2);
+  color: #ff0000;
+  opacity: 1;
+  transform: scale(1.1);
+  box-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
+}
+
+.add-track-button {
+  margin-left: 5px;
+  margin-right: 5px;
+  background: transparent;
+  color: #28a745;
+  border: none;
+  border-radius: 2px;
+  padding: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.add-track-button:hover {
+  opacity: 1;
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+}
+
+.add-track-button:active {
+  background: rgba(40, 167, 69, 0.2);
+  color: #1e7e34;
+}
+
+.drop-zone {
+  height: 4px;
+  background: transparent;
+  margin: 2px 0;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.drop-zone.drag-over {
+  background: #007acc;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.drop-zone.drag-over::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -2px;
+  bottom: -2px;
+  background: #007acc;
+  border-radius: 3px;
+  z-index: -1;
+}
+
+.block-list-container {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.drop-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #007acc;
+  border-radius: 1px;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.drop-indicator.visible {
+  opacity: 1;
+}
