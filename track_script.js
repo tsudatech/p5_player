@@ -5,6 +5,7 @@ let playInterval = null;
 let draggedTrackIndex = null;
 let selectedTrackIndex = null;
 let playingTrackIndex = null;
+let clickToPlayEnabled = false;
 
 // 初期化
 document.addEventListener("DOMContentLoaded", function () {
@@ -21,10 +22,23 @@ function initializeControls() {
   const playButton = document.getElementById("play-button");
   const stopButton = document.getElementById("stop-button");
   const bpmInput = document.getElementById("bpm-input");
+  const clickToggle = document.getElementById("click-toggle");
 
   playButton.addEventListener("click", startPlayback);
   stopButton.addEventListener("click", stopPlayback);
   bpmInput.addEventListener("change", updateBpm);
+  clickToggle.addEventListener("change", updateClickToPlay);
+}
+
+function updateClickToPlay() {
+  const clickToggle = document.getElementById("click-toggle");
+  clickToPlayEnabled = clickToggle.checked;
+  console.log("Click to play enabled:", clickToPlayEnabled);
+
+  // Python側に状態を通知
+  if (window.pywebview && window.pywebview.api) {
+    window.pywebview.api.update_click_to_play_state(clickToPlayEnabled);
+  }
 }
 
 function loadTrackBlocks() {
@@ -348,5 +362,15 @@ window.addTrackBlock = function (blockData) {
         renderTrackBlocks();
       }
     });
+  }
+};
+
+// Python側から呼び出されるplay関数
+window.playCurrentTrack = function () {
+  console.log("playCurrentTrack called from Python");
+  if (!isPlaying) {
+    startPlayback();
+  } else {
+    stopPlayback();
   }
 };

@@ -2,6 +2,7 @@ import os
 import webview
 import json
 import uuid
+from pynput import mouse
 
 render_window = None
 editor_window = None
@@ -11,6 +12,7 @@ selected_code_id = None
 track_blocks = []
 DATA_FILE = "code_blocks.json"
 TRACK_FILE = "track_data.json"
+click_to_play_enabled = False
 
 
 # ---- 永続化用の関数 ----
@@ -115,6 +117,29 @@ def update_render_window(code: str):
         """
 
         render_window.evaluate_js(js_code)
+
+
+def on_click(x, y, button, pressed):
+    global track_window, click_to_play_enabled
+    if pressed:
+        print(f"Mouse clicked at ({x}, {y}) with {button}")
+
+        # トグルがONの時のみplayを発火
+        if click_to_play_enabled:
+            print(f"Click to play enabled! Triggering play...")
+            if track_window:
+                # トラックウィンドウにplayコマンドを送信
+                track_window.evaluate_js("playCurrentTrack()")
+        else:
+            print(f"Click to play disabled - ignoring click")
+
+
+def start_mouse_listener():
+    """マウスリスナーを別スレッドで起動"""
+    print("start_mouse_listener")
+    listener = mouse.Listener(on_click=on_click)
+    listener.start()
+    return listener
 
 
 class EditorAPI:
@@ -262,6 +287,13 @@ class TrackAPI:
         save_track_data()
         return {"status": "success", "track_blocks": track_blocks}
 
+    def update_click_to_play_state(self, enabled):
+        """クリック再生の有効/無効状態を更新"""
+        global click_to_play_enabled
+        click_to_play_enabled = enabled
+        print(f"Click to play state updated: {enabled}")
+        return {"status": "success"}
+
 
 if __name__ == "__main__":
     load_blocks()
@@ -331,6 +363,9 @@ if __name__ == "__main__":
         y=0,
         on_top=True,
     )
+
+    # マウスリスナーを起動
+    mouse_listener = start_mouse_listener()
 
     webview.start(
         # debug=True
