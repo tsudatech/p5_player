@@ -10,14 +10,17 @@ track_window = None
 code_blocks = []
 selected_code_id = None
 track_blocks = []
-DATA_FILE = "code_blocks.json"
-TRACK_FILE = "track_data.json"
+DATA_FILE = "data/code_blocks.json"
+TRACK_FILE = "data/track_data.json"
 click_to_play_enabled = False
 
 
 # ---- 永続化用の関数 ----
 def load_blocks():
     global code_blocks, selected_code_id
+    # dataフォルダが存在しない場合は作成
+    os.makedirs("data", exist_ok=True)
+
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, "r", encoding="utf-8") as f:
@@ -31,6 +34,9 @@ def load_blocks():
 
 
 def save_blocks():
+    # dataフォルダが存在しない場合は作成
+    os.makedirs("data", exist_ok=True)
+
     try:
         with open(DATA_FILE, "w", encoding="utf-8") as f:
             json.dump(
@@ -45,6 +51,9 @@ def save_blocks():
 
 def load_track_data():
     global track_blocks
+    # dataフォルダが存在しない場合は作成
+    os.makedirs("data", exist_ok=True)
+
     if os.path.exists(TRACK_FILE):
         try:
             with open(TRACK_FILE, "r", encoding="utf-8") as f:
@@ -56,6 +65,9 @@ def load_track_data():
 
 
 def save_track_data():
+    # dataフォルダが存在しない場合は作成
+    os.makedirs("data", exist_ok=True)
+
     try:
         with open(TRACK_FILE, "w", encoding="utf-8") as f:
             json.dump(
@@ -344,7 +356,7 @@ if __name__ == "__main__":
 
     editor_window = webview.create_window(
         "Code Editor",
-        "editor_window.html",
+        "view/editor/index.html",
         js_api=editor_api,
         width=1000,
         height=1000,
@@ -355,7 +367,7 @@ if __name__ == "__main__":
 
     track_window = webview.create_window(
         "Track Window",
-        "track_window.html",
+        "view/track/index.html",
         js_api=track_api,
         width=2000,
         height=200,
