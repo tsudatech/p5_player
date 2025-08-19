@@ -1,4 +1,5 @@
 let trackBlocks = [];
+let currentBpm = 120;
 let isPlaying = false;
 let currentPlayingIndex = 0;
 let playInterval = null;
@@ -46,6 +47,14 @@ function loadTrackBlocks() {
   if (window.pywebview && window.pywebview.api) {
     window.pywebview.api.get_track_blocks().then((data) => {
       trackBlocks = data.track_blocks || [];
+      currentBpm = data.bpm || 120;
+
+      // BPM入力フィールドを更新
+      const bpmInput = document.getElementById("bpm-input");
+      if (bpmInput) {
+        bpmInput.value = currentBpm;
+      }
+
       renderTrackBlocks();
     });
   }
@@ -182,9 +191,8 @@ function createTrackBlockElement(block, index) {
 }
 
 function addTrackBlockInternal(blockData) {
-  const bpm = parseInt(document.getElementById("bpm-input").value) || 120;
   const bars = 8; // デフォルトの小節数
-  const duration = Math.round((60 / bpm) * 4 * bars * 1000); // BPMから8小節分の再生時間を計算（ミリ秒）
+  const duration = Math.round((60 / currentBpm) * 4 * bars * 1000); // BPMから8小節分の再生時間を計算（ミリ秒）
 
   const trackBlock = {
     id: blockData.id,
@@ -282,6 +290,7 @@ function playNextBlock() {
 
 function updateBpm() {
   const bpm = parseInt(document.getElementById("bpm-input").value) || 120;
+  currentBpm = bpm;
 
   // 既存のブロックの再生時間を更新（各ブロックの小節数を使用）
   trackBlocks.forEach((block) => {
@@ -289,15 +298,21 @@ function updateBpm() {
     block.duration = Math.round((60 / bpm) * 4 * bars * 1000);
   });
 
+  // Python側にBPMを保存
+  if (window.pywebview && window.pywebview.api) {
+    window.pywebview.api.update_bpm(bpm);
+  }
+
   saveTrackBlocks();
   renderTrackBlocks();
 }
 
 function updateBlockBars(index, bars) {
   if (index >= 0 && index < trackBlocks.length) {
-    const bpm = parseInt(document.getElementById("bpm-input").value) || 120;
     trackBlocks[index].bars = bars;
-    trackBlocks[index].duration = Math.round((60 / bpm) * 4 * bars * 1000);
+    trackBlocks[index].duration = Math.round(
+      (60 / currentBpm) * 4 * bars * 1000
+    );
     saveTrackBlocks();
     renderTrackBlocks();
   }
@@ -344,9 +359,8 @@ window.addTrackBlock = function (blockData) {
 
   // Python側のAPIを使用してブロックを追加
   if (window.pywebview && window.pywebview.api) {
-    const bpm = parseInt(document.getElementById("bpm-input").value) || 120;
     const bars = 8; // デフォルトの小節数
-    const duration = Math.round((60 / bpm) * 4 * bars * 1000);
+    const duration = Math.round((60 / currentBpm) * 4 * bars * 1000);
 
     const trackBlock = {
       id: blockData.id,

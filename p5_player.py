@@ -10,6 +10,7 @@ track_window = None
 code_blocks = []
 selected_code_id = None
 track_blocks = []
+track_bpm = 120
 DATA_FILE = "data/code_blocks.json"
 TRACK_FILE = "data/track_data.json"
 click_to_play_enabled = False
@@ -50,7 +51,7 @@ def save_blocks():
 
 
 def load_track_data():
-    global track_blocks
+    global track_blocks, track_bpm
     # dataフォルダが存在しない場合は作成
     os.makedirs("data", exist_ok=True)
 
@@ -59,19 +60,22 @@ def load_track_data():
             with open(TRACK_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 track_blocks = data.get("track_blocks", [])
+                track_bpm = data.get("bpm", 120)
         except Exception as e:
             print("Error loading track data:", e)
             track_blocks = []
+            track_bpm = 120
 
 
 def save_track_data():
+    global track_bpm
     # dataフォルダが存在しない場合は作成
     os.makedirs("data", exist_ok=True)
 
     try:
         with open(TRACK_FILE, "w", encoding="utf-8") as f:
             json.dump(
-                {"track_blocks": track_blocks},
+                {"bpm": track_bpm, "track_blocks": track_blocks},
                 f,
                 ensure_ascii=False,
                 indent=2,
@@ -282,13 +286,20 @@ class TrackAPI:
 
     def get_track_blocks(self):
         """トラックブロックの一覧を取得"""
-        global track_blocks
-        return {"track_blocks": track_blocks}
+        global track_blocks, track_bpm
+        return {"track_blocks": track_blocks, "bpm": track_bpm}
 
     def save_track_blocks(self, blocks):
         """トラックブロックを保存"""
         global track_blocks
         track_blocks = blocks
+        save_track_data()
+        return {"status": "success"}
+
+    def update_bpm(self, bpm):
+        """BPMを更新"""
+        global track_bpm
+        track_bpm = bpm
         save_track_data()
         return {"status": "success"}
 
