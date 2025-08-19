@@ -155,12 +155,58 @@ def on_click(x, y, button, pressed):
             print(f"Click to play disabled - ignoring click")
 
 
+# キー押下のタイミングを記録
+key_press_times = {}
+
+
+def on_key_press(key):
+    global render_window, editor_window, track_window, key_press_times
+    try:
+        if hasattr(key, "char"):
+            current_time = time.time()
+            key_char = key.char.lower()
+
+            # 前回の押下時刻を取得
+            last_press_time = key_press_times.get(key_char, 0)
+
+            # 0.5秒以内の連続押下を検出
+            if current_time - last_press_time < 0.5:
+                if key_char == "h":
+                    print("Double H pressed - hiding all windows")
+                    if render_window:
+                        render_window.hide()
+                    if editor_window:
+                        editor_window.hide()
+                    if track_window:
+                        track_window.hide()
+                elif key_char == "s":
+                    print("Double S pressed - showing all windows")
+                    if render_window:
+                        render_window.show()
+                    if editor_window:
+                        editor_window.show()
+                    if track_window:
+                        track_window.show()
+                # 連続押下を検出したらタイミングをリセット
+                key_press_times[key_char] = 0
+            else:
+                # 初回押下の時刻を記録
+                key_press_times[key_char] = current_time
+
+    except AttributeError:
+        pass
+
+
 def start_mouse_listener():
-    """マウスリスナーを別スレッドで起動"""
+    """マウスリスナーとキーボードリスナーを別スレッドで起動"""
     print("start_mouse_listener")
+    from pynput import keyboard
+
     listener = mouse.Listener(on_click=on_click)
+    key_listener = keyboard.Listener(on_press=on_key_press)
     listener.start()
-    return listener
+    key_listener.start()
+    return listener, key_listener
 
 
 class EditorAPI:
@@ -315,6 +361,28 @@ class TrackAPI:
         save_track_data()
         return {"status": "success"}
 
+    def hide_all_windows(self):
+        """全てのウィンドウを隠す"""
+        global render_window, editor_window, track_window
+        if render_window:
+            render_window.hide()
+        if editor_window:
+            editor_window.hide()
+        if track_window:
+            track_window.hide()
+        return {"status": "success"}
+
+    def show_all_windows(self):
+        """全てのウィンドウを表示"""
+        global render_window, editor_window, track_window
+        if render_window:
+            render_window.show()
+        if editor_window:
+            editor_window.show()
+        if track_window:
+            track_window.show()
+        return {"status": "success"}
+
     def add_track_block(self, block_data):
         """トラックにブロックを追加"""
         global track_blocks
@@ -399,8 +467,8 @@ if __name__ == "__main__":
         on_top=True,
     )
 
-    # マウスリスナーを起動
-    mouse_listener = start_mouse_listener()
+    # マウスリスナーとキーボードリスナーを起動
+    mouse_listener, key_listener = start_mouse_listener()
 
     webview.start(
         # debug=True
