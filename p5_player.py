@@ -3,6 +3,7 @@ import webview
 import json
 import uuid
 from pynput import mouse
+import time
 
 render_window = None
 editor_window = None
@@ -11,6 +12,7 @@ code_blocks = []
 selected_code_id = None
 track_blocks = []
 track_bpm = 120
+track_delay = 0
 DATA_FILE = "data/code_blocks.json"
 TRACK_FILE = "data/track_data.json"
 click_to_play_enabled = False
@@ -51,7 +53,7 @@ def save_blocks():
 
 
 def load_track_data():
-    global track_blocks, track_bpm
+    global track_blocks, track_bpm, track_delay
     # dataフォルダが存在しない場合は作成
     os.makedirs("data", exist_ok=True)
 
@@ -61,21 +63,23 @@ def load_track_data():
                 data = json.load(f)
                 track_blocks = data.get("track_blocks", [])
                 track_bpm = data.get("bpm", 120)
+                track_delay = data.get("delay", 0)
         except Exception as e:
             print("Error loading track data:", e)
             track_blocks = []
             track_bpm = 120
+            track_delay = 0
 
 
 def save_track_data():
-    global track_bpm
+    global track_bpm, track_delay
     # dataフォルダが存在しない場合は作成
     os.makedirs("data", exist_ok=True)
 
     try:
         with open(TRACK_FILE, "w", encoding="utf-8") as f:
             json.dump(
-                {"bpm": track_bpm, "track_blocks": track_blocks},
+                {"bpm": track_bpm, "delay": track_delay, "track_blocks": track_blocks},
                 f,
                 ensure_ascii=False,
                 indent=2,
@@ -145,6 +149,7 @@ def on_click(x, y, button, pressed):
             print(f"Click to play enabled! Triggering play...")
             if track_window:
                 # トラックウィンドウにplayコマンドを送信
+                time.sleep(track_delay / 1000.0)  # Convert ms to seconds
                 track_window.evaluate_js("playCurrentTrack()")
         else:
             print(f"Click to play disabled - ignoring click")
@@ -286,8 +291,8 @@ class TrackAPI:
 
     def get_track_blocks(self):
         """トラックブロックの一覧を取得"""
-        global track_blocks, track_bpm
-        return {"track_blocks": track_blocks, "bpm": track_bpm}
+        global track_blocks, track_bpm, track_delay
+        return {"track_blocks": track_blocks, "bpm": track_bpm, "delay": track_delay}
 
     def save_track_blocks(self, blocks):
         """トラックブロックを保存"""
@@ -300,6 +305,13 @@ class TrackAPI:
         """BPMを更新"""
         global track_bpm
         track_bpm = bpm
+        save_track_data()
+        return {"status": "success"}
+
+    def update_delay(self, delay):
+        """Delay timeを更新"""
+        global track_delay
+        track_delay = delay
         save_track_data()
         return {"status": "success"}
 

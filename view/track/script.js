@@ -1,5 +1,6 @@
 let trackBlocks = [];
 let currentBpm = 120;
+let currentDelay = 0;
 let isPlaying = false;
 let currentPlayingIndex = 0;
 let playInterval = null;
@@ -23,11 +24,13 @@ function initializeControls() {
   const playButton = document.getElementById("play-button");
   const stopButton = document.getElementById("stop-button");
   const bpmInput = document.getElementById("bpm-input");
+  const delayInput = document.getElementById("delay-input");
   const clickToggle = document.getElementById("click-toggle");
 
   playButton.addEventListener("click", startPlayback);
   stopButton.addEventListener("click", stopPlayback);
   bpmInput.addEventListener("change", updateBpm);
+  delayInput.addEventListener("change", updateDelay);
   clickToggle.addEventListener("change", updateClickToPlay);
 }
 
@@ -48,11 +51,18 @@ function loadTrackBlocks() {
     window.pywebview.api.get_track_blocks().then((data) => {
       trackBlocks = data.track_blocks || [];
       currentBpm = data.bpm || 120;
+      currentDelay = data.delay || 0;
 
       // BPM入力フィールドを更新
       const bpmInput = document.getElementById("bpm-input");
       if (bpmInput) {
         bpmInput.value = currentBpm;
+      }
+
+      // Delay入力フィールドを更新
+      const delayInput = document.getElementById("delay-input");
+      if (delayInput) {
+        delayInput.value = currentDelay;
       }
 
       renderTrackBlocks();
@@ -305,6 +315,16 @@ function updateBpm() {
 
   saveTrackBlocks();
   renderTrackBlocks();
+}
+
+function updateDelay() {
+  const delay = parseInt(document.getElementById("delay-input").value) || 0;
+  currentDelay = delay;
+
+  // Python側にDelayを保存
+  if (window.pywebview && window.pywebview.api) {
+    window.pywebview.api.update_delay(delay);
+  }
 }
 
 function updateBlockBars(index, bars) {

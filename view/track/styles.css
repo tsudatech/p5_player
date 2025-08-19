@@ -56,6 +56,21 @@ input,
   border-color: #007acc;
 }
 
+#delay-input {
+  width: 60px;
+  padding: 5px;
+  border: 1px solid #555;
+  border-radius: 3px;
+  background: #4d4d4d;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+#delay-input:focus {
+  outline: none;
+  border-color: #007acc;
+}
+
 #play-button:hover {
   background: #218838;
 }
