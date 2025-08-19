@@ -25,6 +25,18 @@ input,
   border-radius: 4px;
 }
 
+.block-item {
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
 .block-item.active {
   background: #aaa;
   border-color: #666;

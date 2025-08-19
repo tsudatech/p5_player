@@ -21,9 +21,7 @@ function refreshBlockList() {
   blocks.forEach((block, i) => {
     const item = document.createElement("div");
     const isSelected = blocks[i].id === selectedCodeId;
-    item.style.borderWidth = "0.1px";
-    item.className =
-      "block-item card bg-base-200 border-primary shadow-sm cursor-pointer transition-all duration-200 p-3 mb-2 flex flex-row items-center";
+    item.className = "block-item card bg-base-200 border border-primary";
     if (!isSelected) {
       item.style.borderColor = "#1e293b";
     }

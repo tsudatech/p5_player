@@ -74,8 +74,8 @@ function createTrackBlockElement(block, index) {
   const isPlaying = index === playingTrackIndex;
   const isCompleted = isPlaying && index < currentPlayingIndex;
 
-  let className = "track-block";
-  if (isSelected) className += " selected";
+  let className = "track-block bg-base-200 border border-neutral";
+  if (isSelected) className += " selected border-primary";
   if (isPlaying) className += " playing";
   if (isCompleted) className += " completed";
 

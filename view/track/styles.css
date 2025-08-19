@@ -7,6 +7,14 @@ body {
   overflow: hidden;
 }
 
+.btn,
+input,
+.input,
+.select,
+.card {
+  border-radius: 4px;
+}
+
 #track-container {
   display: flex;
   flex-direction: column;
@@ -17,8 +25,7 @@ body {
 #controls {
   display: flex;
   align-items: center;
-  padding: 10px;
-  background: #3d3d3d;
+  padding: 12px 20px;
   border-bottom: 1px solid #555;
   gap: 15px;
 }
@@ -49,21 +56,6 @@ body {
   border-color: #007acc;
 }
 
-#play-button,
-#stop-button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 3px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-#play-button {
-  background: #28a745;
-  color: white;
-}
-
 #play-button:hover {
   background: #218838;
 }
@@ -71,11 +63,6 @@ body {
 #play-button:disabled {
   background: #6c757d;
   cursor: not-allowed;
-}
-
-#stop-button {
-  background: #dc3545;
-  color: white;
 }
 
 #stop-button:hover {
@@ -91,7 +78,7 @@ body {
   flex: 1;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 20px;
+  padding: 8px 20px;
 }
 
 #track-lane {
@@ -102,8 +89,6 @@ body {
 }
 
 .track-block {
-  background: #4d4d4d;
-  border: 2px solid #666;
   border-radius: 5px;
   padding: 10px;
   min-width: 120px;
@@ -125,12 +110,11 @@ body {
 }
 
 .track-block.drag-over {
-  border-color: #007acc;
+  border-color: #737c83;
   background: #3d5d5d;
 }
 
 .track-block.selected {
-  border-color: #007acc;
   background: #2d3d5d;
   box-shadow: 0 0 5px rgba(0, 122, 204, 0.5);
 }
@@ -151,7 +135,6 @@ body {
   font-weight: bold;
   color: #ffffff;
   text-align: center;
-  margin-bottom: 5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -168,7 +151,6 @@ body {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  margin-top: 5px;
 }
 
 .track-block-bars label {
