@@ -21,7 +21,12 @@ function refreshBlockList() {
   blocks.forEach((block, i) => {
     const item = document.createElement("div");
     const isSelected = blocks[i].id === selectedCodeId;
-    item.className = "block-item" + (isSelected ? " active" : "");
+    item.style.borderWidth = "0.1px";
+    item.className =
+      "block-item card bg-base-200 border-primary shadow-sm cursor-pointer transition-all duration-200 p-3 mb-2 flex flex-row items-center";
+    if (!isSelected) {
+      item.style.borderColor = "#1e293b";
+    }
     item.draggable = true;
     item.dataset.index = i;
 
@@ -97,10 +102,15 @@ function refreshBlockList() {
       handleDeleteClick(i, deleteButton, blockName);
     };
 
+    // ボタンコンテナを作成
+    const buttonContainer = document.createElement("div");
+    buttonContainer.className = "flex ml-auto";
+    buttonContainer.appendChild(addTrackButton);
+    buttonContainer.appendChild(deleteButton);
+
     item.appendChild(handle);
     item.appendChild(nameSpan);
-    item.appendChild(addTrackButton);
-    item.appendChild(deleteButton);
+    item.appendChild(buttonContainer);
 
     /**
      * ブロックアイテムクリックで選択
@@ -503,10 +513,109 @@ function initializeEditor() {
     },
   });
   require(["vs/editor/editor.main"], function () {
+    // Tokyo Nightテーマの定義
+    monaco.editor.defineTheme("tokyo-night", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "5f6996" },
+        { token: "keyword", foreground: "bb9af7" },
+        { token: "string", foreground: "9ece6a" },
+        { token: "number", foreground: "ff9e64" },
+        { token: "operator", foreground: "89ddff" },
+        { token: "function", foreground: "7aa2f7" },
+        { token: "variable", foreground: "c0caf5" },
+        { token: "type", foreground: "2ac3de" },
+        { token: "class", foreground: "c0caf5" },
+        { token: "constant", foreground: "ff9e64" },
+        { token: "parameter", foreground: "e0af68" },
+        { token: "property", foreground: "7dcfff" },
+        { token: "punctuation", foreground: "89ddff" },
+        { token: "delimiter", foreground: "89ddff" },
+        { token: "tag", foreground: "f7768e" },
+        { token: "attribute.name", foreground: "bb9af7" },
+        { token: "attribute.value", foreground: "9ece6a" },
+        { token: "meta", foreground: "565a6e" },
+        { token: "meta.preprocessor", foreground: "bb9af7" },
+        { token: "meta.tag", foreground: "f7768e" },
+        { token: "storage", foreground: "bb9af7" },
+        { token: "storage.type", foreground: "bb9af7" },
+        { token: "entity.name.function", foreground: "7aa2f7" },
+        { token: "entity.name.class", foreground: "c0caf5" },
+        { token: "entity.name.type", foreground: "2ac3de" },
+        { token: "entity.name.tag", foreground: "f7768e" },
+        { token: "entity.other.attribute-name", foreground: "bb9af7" },
+        { token: "support.function", foreground: "2ac3de" },
+        { token: "support.constant", foreground: "bb9af7" },
+        { token: "support.type", foreground: "2ac3de" },
+        { token: "support.class", foreground: "2ac3de" },
+        { token: "invalid", foreground: "ff5370" },
+        { token: "invalid.deprecated", foreground: "bb9af7" },
+      ],
+      colors: {
+        "editor.background": "#24283b",
+        "editor.foreground": "#a9b1d6",
+        "editorCursor.foreground": "#c0caf5",
+        "editor.lineHighlightBackground": "#292e42",
+        "editorLineNumber.activeForeground": "#8089b3",
+        "editorLineNumber.foreground": "#3b4261",
+        "editor.selectionBackground": "#6f7bb640",
+        "editor.inactiveSelectionBackground": "#6f7bb615",
+        "editor.wordHighlightBackground": "#6f7bb633",
+        "editor.findMatchBackground": "#3d59a166",
+        "editor.findMatchHighlightBackground": "#3d59a166",
+        "editorBracketMatch.background": "#1f2335",
+        "editorBracketMatch.border": "#545c7e",
+        "editorIndentGuide.background": "#2d324a",
+        "editorIndentGuide.activeBackground": "#3b4261",
+        "sideBar.background": "#1f2335",
+        "sideBar.foreground": "#8089b3",
+        "sideBarTitle.foreground": "#8089b3",
+        "statusBar.background": "#1f2335",
+        "statusBar.foreground": "#8089b3",
+        "titleBar.activeBackground": "#1f2335",
+        "titleBar.activeForeground": "#8089b3",
+        "activityBar.background": "#1f2335",
+        "activityBar.foreground": "#8089b3",
+        "activityBar.inactiveForeground": "#41496b",
+        "tab.activeBackground": "#1f2335",
+        "tab.activeForeground": "#a9b1d6",
+        "tab.inactiveBackground": "#1f2335",
+        "tab.inactiveForeground": "#8089b3",
+        "panel.background": "#1f2335",
+        "panel.border": "#1b1e2e",
+        "panelTitle.activeBorder": "#3d59a1",
+        "panelTitle.activeForeground": "#a9b1d6",
+        "panelTitle.inactiveForeground": "#8089b3",
+        "input.background": "#1b1e2e",
+        "input.foreground": "#a9b1d6",
+        "input.placeholderForeground": "#4a5272",
+        "input.border": "#282e44",
+        "dropdown.background": "#1b1e2e",
+        "dropdown.foreground": "#8089b3",
+        "dropdown.border": "#1b1e2e",
+        "list.activeSelectionBackground": "#2c324a",
+        "list.activeSelectionForeground": "#a9b1d6",
+        "list.inactiveSelectionBackground": "#292e42",
+        "list.inactiveSelectionForeground": "#a9b1d6",
+        "list.hoverBackground": "#1b1e2e",
+        "list.hoverForeground": "#a9b1d6",
+        "list.focusForeground": "#a9b1d6",
+        "menu.foreground": "#8089b3",
+        "menubar.selectionForeground": "#c0caf5",
+        "breadcrumb.foreground": "#545c7e",
+        "breadcrumb.focusForeground": "#a9b1d6",
+        "breadcrumb.activeSelectionForeground": "#a9b1d6",
+        "scrollbarSlider.background": "#9cacff15",
+        "scrollbarSlider.hoverBackground": "#9cacff10",
+        "scrollbarSlider.activeBackground": "#9cacff22",
+      },
+    });
+
     editor = monaco.editor.create(document.getElementById("editor"), {
       value: "// Select or add a block",
       language: "javascript",
-      theme: "vs-dark",
+      theme: "tokyo-night",
       automaticLayout: true,
       scrollBeyondLastLine: false,
       wordWrap: "on",

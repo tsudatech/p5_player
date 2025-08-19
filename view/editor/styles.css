@@ -6,16 +6,6 @@ body {
   overflow: hidden;
 }
 
-#sidebar {
-  width: 300px;
-  min-width: 250px;
-  max-width: 400px;
-  background: #f0f0f0;
-  padding: 10px;
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-
 #editor {
   flex: 1;
   height: 100%;
@@ -27,22 +17,12 @@ button {
   width: 100%;
 }
 
-.block-item {
-  padding: 5px;
-  cursor: pointer;
-  background: #ddd;
-  margin: 5px 0;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  user-select: none;
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.block-item:hover {
-  background: #ccc;
+.btn,
+input,
+.input,
+.select,
+.card {
+  border-radius: 4px;
 }
 
 .block-item.active {
@@ -78,12 +58,6 @@ button {
   border-radius: 2px;
   transition: background-color 0.2s;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.block-name:hover {
-  background: rgba(0, 0, 0, 0.1);
 }
 
 .block-name.editing {

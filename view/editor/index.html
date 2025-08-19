@@ -1,20 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="night">
   <head>
     <meta charset="utf-8" />
     <title>Code Editor with Blocks</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        daisyui: {
+          themes: ["night"],
+        },
+      };
+    </script>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs/loader.min.js"></script>
   </head>
   <body>
-    <div id="sidebar">
-      <button onclick="addBlock()">+ Add Block</button>
+    <div id="editor"></div>
+    <div
+      id="sidebar"
+      class="w-80 min-w-64 max-w-96 bg-base-100 p-4 overflow-y-auto flex-shrink-0 flex flex-col"
+    >
+      <button class="btn btn-primary mb-4" onclick="addBlock()">
+        + Add Block
+      </button>
       <div id="blockList" class="block-list-container">
         <div class="drop-indicator" id="dropIndicator"></div>
       </div>
-      <button onclick="playCode()">▶ Play</button>
+      <button class="btn btn-success mt-4" onclick="playCode()">▶ Play</button>
     </div>
-    <div id="editor"></div>
 
     <script src="script.js"></script>
     <script>
