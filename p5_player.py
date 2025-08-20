@@ -126,8 +126,12 @@ def update_render_window(code: str):
         escaped_code = code.replace("\\", "\\\\")
         escaped_code = escaped_code.replace("`", "\\`")
         escaped_code = escaped_code.replace("$", "\\$")
+        # ダブルクォートとシングルクォートの両方に対応
         escaped_code = escaped_code.replace(
             'loadImage("images', f'loadImage("http://localhost:{image_server_port}'
+        )
+        escaped_code = escaped_code.replace(
+            "loadImage('images", f"loadImage('http://localhost:{image_server_port}"
         )
 
         js_code = f"""
