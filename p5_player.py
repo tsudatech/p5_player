@@ -4,6 +4,8 @@ import json
 import uuid
 from pynput import mouse
 import time
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+import threading
 
 render_window = None
 editor_window = None
@@ -16,6 +18,34 @@ track_delay = 0
 DATA_FILE = "data/code_blocks.json"
 TRACK_FILE = "data/track_data.json"
 click_to_play_enabled = False
+image_server_port = 8080
+
+
+class ImageRequestHandler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory="images", **kwargs)
+
+    def end_headers(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        super().end_headers()
+
+
+def start_image_server():
+    """画像サーバーを起動"""
+    try:
+        # 画像ディレクトリが存在しない場合は作成
+        os.makedirs("images", exist_ok=True)
+
+        server = HTTPServer(("localhost", image_server_port), ImageRequestHandler)
+        server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+        server_thread.start()
+        print(f"Image server started on http://localhost:{image_server_port}")
+        return server
+    except Exception as e:
+        print(f"Failed to start image server: {e}")
+        return None
 
 
 # ---- 永続化用の関数 ----
@@ -90,10 +120,15 @@ def save_track_data():
 
 def update_render_window(code: str):
     """iframeごと作り直してp5.jsスケッチを安全に再注入"""
-    global render_window
+    global render_window, image_server_port
     if render_window:
         # バッククォートとバックスラッシュをエスケープ
-        escaped_code = code.replace("\\", "\\\\").replace("`", "\\`")
+        escaped_code = code.replace("\\", "\\\\")
+        escaped_code = escaped_code.replace("`", "\\`")
+        escaped_code = escaped_code.replace("$", "\\$")
+        escaped_code = escaped_code.replace(
+            'loadImage("images', f'loadImage("http://localhost:{image_server_port}'
+        )
 
         js_code = f"""
         // 既存のiframeを削除
@@ -401,6 +436,10 @@ class TrackAPI:
 if __name__ == "__main__":
     load_blocks()
     load_track_data()
+
+    # 画像サーバーを起動
+    image_server = start_image_server()
+
     editor_api = EditorAPI()
     render_api = RenderAPI()
     track_api = TrackAPI()
@@ -471,5 +510,6 @@ if __name__ == "__main__":
     mouse_listener, key_listener = start_mouse_listener()
 
     webview.start(
+        # デバッグモード
         # debug=True
     )
