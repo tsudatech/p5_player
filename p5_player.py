@@ -512,8 +512,5 @@ if __name__ == "__main__":
 
     # マウスリスナーとキーボードリスナーを起動
     mouse_listener, key_listener = start_mouse_listener()
-
-    webview.start(
-        # デバッグモード
-        # debug=True
-    )
+    webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
+    webview.start(debug=True)
