@@ -185,11 +185,6 @@ def update_render_window(code: str):
         `;
 
         document.body.appendChild(iframe);
-        
-        // リサイズ監視を再設定
-        if (typeof setupResizeMonitoring === 'function') {{
-            setupResizeMonitoring();
-        }}
         """
 
         render_window.evaluate_js(js_code)
@@ -408,33 +403,24 @@ class RenderAPI:
     def on_render_window_resize(self, width, height):
         """レンダーウィンドウが手動でリサイズされた時の処理"""
         global render_width, render_height, track_window
-        print(f"on_render_window_resize called with: {width}x{height}")
-
-        render_width = width
-        render_height = height
-
-        # 設定を保存
+        print(f"on_render_window_resize called: {width}x{height}")
+        render_width, render_height = width, height
         save_track_data()
 
-        # トラックウィンドウのテキストボックスを更新
         if track_window:
-            try:
-                track_window.evaluate_js(
-                    f"""
-                    document.getElementById('render-width').value = {width};
-                    document.getElementById('render-height').value = {height};
-                    currentRenderWidth = {width};
-                    currentRenderHeight = {height};
-                    console.log('Track window updated with new size:', {width}, 'x', {height});
-                """
-                )
-                print(f"Track window updated successfully")
-            except Exception as e:
-                print(f"Error updating track window: {e}")
+            print("Updating track window...")
+            track_window.evaluate_js(
+                f"""
+                document.getElementById('render-width').value = {width};
+                document.getElementById('render-height').value = {height};
+                currentRenderWidth = {width};
+                currentRenderHeight = {height};
+                console.log('Track window updated with size:', {width}, 'x', {height});
+            """
+            )
         else:
             print("Track window not available")
 
-        print(f"Render window manually resized to: {width}x{height}")
         return {"status": "success"}
 
 
@@ -610,57 +596,20 @@ if __name__ == "__main__":
             }
         </style>
         <script>
-            // ウィンドウリサイズイベントを監視
-            let lastWidth = window.innerWidth;
-            let lastHeight = window.innerHeight;
+            let lastSize = {width: window.innerWidth, height: window.innerHeight};
             let resizeTimeout = null;
-            
-            function notifyResize() {
-                console.log('Resize detected:', window.innerWidth, 'x', window.innerHeight);
-                if (window.pywebview && window.pywebview.api) {
-                    console.log('Calling on_render_window_resize...');
-                    window.pywebview.api.on_render_window_resize(window.innerWidth, window.innerHeight).then(function(result) {
-                        console.log('Resize notification result:', result);
-                    }).catch(function(error) {
-                        console.error('Error calling on_render_window_resize:', error);
-                    });
-                } else {
-                    console.error('pywebview API not available');
-                }
-            }
-            
-            function setupResizeMonitoring() {
-                // 既存のイベントリスナーをクリア
-                window.removeEventListener('resize', handleResize);
-                window.addEventListener('resize', handleResize);
-            }
-            
-            function handleResize() {
-                console.log('Resize event triggered');
-                // デバウンス処理
-                if (resizeTimeout) {
-                    clearTimeout(resizeTimeout);
-                }
-                
-                resizeTimeout = setTimeout(function() {
-                    const newWidth = window.innerWidth;
-                    const newHeight = window.innerHeight;
-                    
-                    console.log('Checking resize:', newWidth, 'x', newHeight, 'vs', lastWidth, 'x', lastHeight);
-                    
-                    // サイズが実際に変更された場合のみ通知
-                    if (newWidth !== lastWidth || newHeight !== lastHeight) {
-                        lastWidth = newWidth;
-                        lastHeight = newHeight;
-                        notifyResize();
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    const newSize = {width: window.innerWidth, height: window.innerHeight};
+                    if (newSize.width !== lastSize.width || newSize.height !== lastSize.height) {
+                        lastSize = newSize;
+                        if (window.pywebview?.api) {
+                            window.pywebview.api.on_render_window_resize(newSize.width, newSize.height);
+                        }
                     }
-                }, 100);
-            }
-            
-            // 初期設定
-            console.log('Setting up resize monitoring...');
-            setupResizeMonitoring();
-            console.log('Initial window size:', window.innerWidth, 'x', window.innerHeight);
+                }, 50);
+            });
         </script>
     </head>
     <body>

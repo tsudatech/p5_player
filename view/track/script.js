@@ -22,7 +22,7 @@ window.addEventListener("pywebviewready", function () {
   loadTrackBlocks();
 
   // 定期的にrender windowのサイズを確認（手動リサイズの検出）
-  setInterval(checkRenderWindowSize, 2000);
+  setInterval(checkRenderWindowSize, 1000);
 });
 
 function initializeControls() {
@@ -31,8 +31,6 @@ function initializeControls() {
   const bpmInput = document.getElementById("bpm-input");
   const delayInput = document.getElementById("delay-input");
   const clickToggle = document.getElementById("click-toggle");
-  const renderWidthInput = document.getElementById("render-width");
-  const renderHeightInput = document.getElementById("render-height");
   const applySizeButton = document.getElementById("apply-size-button");
 
   playButton.addEventListener("click", startPlayback);
@@ -378,34 +376,26 @@ function applyRenderSize() {
 }
 
 function checkRenderWindowSize() {
-  // Python側から現在のrender windowサイズを取得
-  if (window.pywebview && window.pywebview.api) {
-    window.pywebview.api.get_render_size().then((data) => {
-      const newWidth = data.width;
-      const newHeight = data.height;
-
-      // 現在のテキストボックスの値と異なる場合のみ更新
-      if (
-        newWidth !== currentRenderWidth ||
-        newHeight !== currentRenderHeight
-      ) {
-        currentRenderWidth = newWidth;
-        currentRenderHeight = newHeight;
-
-        // テキストボックスを更新
-        const renderWidthInput = document.getElementById("render-width");
-        const renderHeightInput = document.getElementById("render-height");
-
-        if (renderWidthInput) {
-          renderWidthInput.value = newWidth;
+  if (window.pywebview?.api) {
+    window.pywebview.api
+      .get_render_size()
+      .then((data) => {
+        console.log("Checking render size:", data);
+        if (
+          data.width !== currentRenderWidth ||
+          data.height !== currentRenderHeight
+        ) {
+          console.log("Size mismatch detected, updating...");
+          currentRenderWidth = data.width;
+          currentRenderHeight = data.height;
+          document.getElementById("render-width").value = data.width;
+          document.getElementById("render-height").value = data.height;
+          console.log("Track window inputs updated");
         }
-        if (renderHeightInput) {
-          renderHeightInput.value = newHeight;
-        }
-
-        console.log(`Render window size detected: ${newWidth}x${newHeight}`);
-      }
-    });
+      })
+      .catch((error) => {
+        console.error("Error checking render size:", error);
+      });
   }
 }
 
