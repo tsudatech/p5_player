@@ -23,12 +23,12 @@
     <div id="editor"></div>
     <div
       id="sidebar"
-      class="w-80 min-w-64 max-w-96 bg-base-100 p-4 overflow-y-auto flex-shrink-0 flex flex-col"
+      class="w-80 min-w-64 max-w-96 bg-base-100 p-4 flex-shrink-0 flex flex-col h-screen"
     >
       <button class="btn btn-primary mb-4" onclick="addBlock()">
         + Add Block
       </button>
-      <div id="blockList" class="block-list-container">
+      <div id="blockList" class="block-list-container flex-1 overflow-y-auto">
         <div class="drop-indicator" id="dropIndicator"></div>
       </div>
       <button class="btn btn-success mt-4" onclick="playCode()">▶ Play</button>

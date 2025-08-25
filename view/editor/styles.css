@@ -180,6 +180,7 @@ input,
   position: relative;
   flex: 1;
   min-height: 0;
+  scrollbar-width: thin;
 }
 
 .drop-indicator {
