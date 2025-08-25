@@ -185,6 +185,11 @@ def update_render_window(code: str):
         `;
 
         document.body.appendChild(iframe);
+        
+        // リサイズ監視を再設定
+        if (typeof setupResizeMonitoring === 'function') {{
+            setupResizeMonitoring();
+        }}
         """
 
         render_window.evaluate_js(js_code)
@@ -400,6 +405,38 @@ class RenderAPI:
         # 初期化完了の通知（必要に応じて追加の処理を行う）
         pass
 
+    def on_render_window_resize(self, width, height):
+        """レンダーウィンドウが手動でリサイズされた時の処理"""
+        global render_width, render_height, track_window
+        print(f"on_render_window_resize called with: {width}x{height}")
+
+        render_width = width
+        render_height = height
+
+        # 設定を保存
+        save_track_data()
+
+        # トラックウィンドウのテキストボックスを更新
+        if track_window:
+            try:
+                track_window.evaluate_js(
+                    f"""
+                    document.getElementById('render-width').value = {width};
+                    document.getElementById('render-height').value = {height};
+                    currentRenderWidth = {width};
+                    currentRenderHeight = {height};
+                    console.log('Track window updated with new size:', {width}, 'x', {height});
+                """
+                )
+                print(f"Track window updated successfully")
+            except Exception as e:
+                print(f"Error updating track window: {e}")
+        else:
+            print("Track window not available")
+
+        print(f"Render window manually resized to: {width}x{height}")
+        return {"status": "success"}
+
 
 class TrackAPI:
     def play_track_block(self, code):
@@ -572,6 +609,59 @@ if __name__ == "__main__":
                 display: block;
             }
         </style>
+        <script>
+            // ウィンドウリサイズイベントを監視
+            let lastWidth = window.innerWidth;
+            let lastHeight = window.innerHeight;
+            let resizeTimeout = null;
+            
+            function notifyResize() {
+                console.log('Resize detected:', window.innerWidth, 'x', window.innerHeight);
+                if (window.pywebview && window.pywebview.api) {
+                    console.log('Calling on_render_window_resize...');
+                    window.pywebview.api.on_render_window_resize(window.innerWidth, window.innerHeight).then(function(result) {
+                        console.log('Resize notification result:', result);
+                    }).catch(function(error) {
+                        console.error('Error calling on_render_window_resize:', error);
+                    });
+                } else {
+                    console.error('pywebview API not available');
+                }
+            }
+            
+            function setupResizeMonitoring() {
+                // 既存のイベントリスナーをクリア
+                window.removeEventListener('resize', handleResize);
+                window.addEventListener('resize', handleResize);
+            }
+            
+            function handleResize() {
+                console.log('Resize event triggered');
+                // デバウンス処理
+                if (resizeTimeout) {
+                    clearTimeout(resizeTimeout);
+                }
+                
+                resizeTimeout = setTimeout(function() {
+                    const newWidth = window.innerWidth;
+                    const newHeight = window.innerHeight;
+                    
+                    console.log('Checking resize:', newWidth, 'x', newHeight, 'vs', lastWidth, 'x', lastHeight);
+                    
+                    // サイズが実際に変更された場合のみ通知
+                    if (newWidth !== lastWidth || newHeight !== lastHeight) {
+                        lastWidth = newWidth;
+                        lastHeight = newHeight;
+                        notifyResize();
+                    }
+                }, 100);
+            }
+            
+            // 初期設定
+            console.log('Setting up resize monitoring...');
+            setupResizeMonitoring();
+            console.log('Initial window size:', window.innerWidth, 'x', window.innerHeight);
+        </script>
     </head>
     <body>
     </body>

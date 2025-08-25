@@ -20,6 +20,9 @@ document.addEventListener("DOMContentLoaded", function () {
 window.addEventListener("pywebviewready", function () {
   console.log("Track window ready");
   loadTrackBlocks();
+
+  // 定期的にrender windowのサイズを確認（手動リサイズの検出）
+  setInterval(checkRenderWindowSize, 2000);
 });
 
 function initializeControls() {
@@ -371,6 +374,38 @@ function applyRenderSize() {
   // Python側にレンダーサイズを更新
   if (window.pywebview && window.pywebview.api) {
     window.pywebview.api.update_render_size(clampedWidth, clampedHeight);
+  }
+}
+
+function checkRenderWindowSize() {
+  // Python側から現在のrender windowサイズを取得
+  if (window.pywebview && window.pywebview.api) {
+    window.pywebview.api.get_render_size().then((data) => {
+      const newWidth = data.width;
+      const newHeight = data.height;
+
+      // 現在のテキストボックスの値と異なる場合のみ更新
+      if (
+        newWidth !== currentRenderWidth ||
+        newHeight !== currentRenderHeight
+      ) {
+        currentRenderWidth = newWidth;
+        currentRenderHeight = newHeight;
+
+        // テキストボックスを更新
+        const renderWidthInput = document.getElementById("render-width");
+        const renderHeightInput = document.getElementById("render-height");
+
+        if (renderWidthInput) {
+          renderWidthInput.value = newWidth;
+        }
+        if (renderHeightInput) {
+          renderHeightInput.value = newHeight;
+        }
+
+        console.log(`Render window size detected: ${newWidth}x${newHeight}`);
+      }
+    });
   }
 }
 
