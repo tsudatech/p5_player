@@ -1,6 +1,8 @@
 let trackBlocks = [];
 let currentBpm = 120;
 let currentDelay = 0;
+let currentRenderWidth = 1000;
+let currentRenderHeight = 1000;
 let isPlaying = false;
 let currentPlayingIndex = 0;
 let playInterval = null;
@@ -26,12 +28,16 @@ function initializeControls() {
   const bpmInput = document.getElementById("bpm-input");
   const delayInput = document.getElementById("delay-input");
   const clickToggle = document.getElementById("click-toggle");
+  const renderWidthInput = document.getElementById("render-width");
+  const renderHeightInput = document.getElementById("render-height");
+  const applySizeButton = document.getElementById("apply-size-button");
 
   playButton.addEventListener("click", startPlayback);
   stopButton.addEventListener("click", stopPlayback);
   bpmInput.addEventListener("change", updateBpm);
   delayInput.addEventListener("change", updateDelay);
   clickToggle.addEventListener("change", updateClickToPlay);
+  applySizeButton.addEventListener("click", applyRenderSize);
 }
 
 function updateClickToPlay() {
@@ -52,6 +58,8 @@ function loadTrackBlocks() {
       trackBlocks = data.track_blocks || [];
       currentBpm = data.bpm || 120;
       currentDelay = data.delay || 0;
+      currentRenderWidth = data.render_width || 1000;
+      currentRenderHeight = data.render_height || 1000;
 
       // BPM入力フィールドを更新
       const bpmInput = document.getElementById("bpm-input");
@@ -63,6 +71,17 @@ function loadTrackBlocks() {
       const delayInput = document.getElementById("delay-input");
       if (delayInput) {
         delayInput.value = currentDelay;
+      }
+
+      // レンダーサイズ入力フィールドを更新
+      const renderWidthInput = document.getElementById("render-width");
+      if (renderWidthInput) {
+        renderWidthInput.value = currentRenderWidth;
+      }
+
+      const renderHeightInput = document.getElementById("render-height");
+      if (renderHeightInput) {
+        renderHeightInput.value = currentRenderHeight;
       }
 
       renderTrackBlocks();
@@ -330,6 +349,28 @@ function updateDelay() {
   // Python側にDelayを保存
   if (window.pywebview && window.pywebview.api) {
     window.pywebview.api.update_delay(delay);
+  }
+}
+
+function applyRenderSize() {
+  const width = parseInt(document.getElementById("render-width").value) || 1000;
+  const height =
+    parseInt(document.getElementById("render-height").value) || 1000;
+
+  // 値の範囲を制限
+  const clampedWidth = Math.max(100, Math.min(3000, width));
+  const clampedHeight = Math.max(100, Math.min(3000, height));
+
+  // 入力フィールドを更新された値で更新
+  document.getElementById("render-width").value = clampedWidth;
+  document.getElementById("render-height").value = clampedHeight;
+
+  currentRenderWidth = clampedWidth;
+  currentRenderHeight = clampedHeight;
+
+  // Python側にレンダーサイズを更新
+  if (window.pywebview && window.pywebview.api) {
+    window.pywebview.api.update_render_size(clampedWidth, clampedHeight);
   }
 }
 

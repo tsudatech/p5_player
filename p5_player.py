@@ -15,6 +15,8 @@ selected_code_id = None
 track_blocks = []
 track_bpm = 120
 track_delay = 0
+render_width = 1000
+render_height = 1000
 DATA_FILE = "data/code_blocks.json"
 TRACK_FILE = "data/track_data.json"
 click_to_play_enabled = False
@@ -83,7 +85,7 @@ def save_blocks():
 
 
 def load_track_data():
-    global track_blocks, track_bpm, track_delay
+    global track_blocks, track_bpm, track_delay, render_width, render_height
     # dataフォルダが存在しない場合は作成
     os.makedirs("data", exist_ok=True)
 
@@ -94,22 +96,32 @@ def load_track_data():
                 track_blocks = data.get("track_blocks", [])
                 track_bpm = data.get("bpm", 120)
                 track_delay = data.get("delay", 0)
+                render_width = data.get("render_width", 1000)
+                render_height = data.get("render_height", 1000)
         except Exception as e:
             print("Error loading track data:", e)
             track_blocks = []
             track_bpm = 120
             track_delay = 0
+            render_width = 1000
+            render_height = 1000
 
 
 def save_track_data():
-    global track_bpm, track_delay
+    global track_bpm, track_delay, render_width, render_height
     # dataフォルダが存在しない場合は作成
     os.makedirs("data", exist_ok=True)
 
     try:
         with open(TRACK_FILE, "w", encoding="utf-8") as f:
             json.dump(
-                {"bpm": track_bpm, "delay": track_delay, "track_blocks": track_blocks},
+                {
+                    "bpm": track_bpm,
+                    "delay": track_delay,
+                    "track_blocks": track_blocks,
+                    "render_width": render_width,
+                    "render_height": render_height,
+                },
                 f,
                 ensure_ascii=False,
                 indent=2,
@@ -427,7 +439,13 @@ class TrackAPI:
                     f"Warning: Code block with id {track_block.get('block_id')} not found, skipping"
                 )
 
-        return {"track_blocks": resolved_blocks, "bpm": track_bpm, "delay": track_delay}
+        return {
+            "track_blocks": resolved_blocks,
+            "bpm": track_bpm,
+            "delay": track_delay,
+            "render_width": render_width,
+            "render_height": render_height,
+        }
 
     def save_track_blocks(self, blocks):
         """トラックブロックを保存（参照データのみ）"""
@@ -505,6 +523,26 @@ class TrackAPI:
         print(f"Click to play state updated: {enabled}")
         return {"status": "success"}
 
+    def update_render_size(self, width, height):
+        """レンダーウィンドウのサイズを更新"""
+        global render_width, render_height, render_window
+        render_width = width
+        render_height = height
+
+        # レンダーウィンドウのサイズを変更
+        if render_window:
+            render_window.resize(width, height)
+
+        # 設定を保存
+        save_track_data()
+        print(f"Render window size updated: {width}x{height}")
+        return {"status": "success"}
+
+    def get_render_size(self):
+        """現在のレンダーウィンドウサイズを取得"""
+        global render_width, render_height
+        return {"width": render_width, "height": render_height}
+
 
 if __name__ == "__main__":
     load_blocks()
@@ -548,8 +586,8 @@ if __name__ == "__main__":
         "Transparent Always on Top p5.js",
         html=initial_html,
         js_api=render_api,
-        width=1000,
-        height=1000,
+        width=render_width,
+        height=render_height,
         x=0,
         y=250,
         frameless=True,

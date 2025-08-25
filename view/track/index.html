@@ -44,6 +44,29 @@
           <label for="click-toggle">Click to Play:</label>
           <input type="checkbox" id="click-toggle" />
         </div>
+        <div class="control-group">
+          <label for="render-width">Render Width:</label>
+          <input
+            type="number"
+            id="render-width"
+            value="1000"
+            min="100"
+            max="3000"
+          />
+        </div>
+        <div class="control-group">
+          <label for="render-height">Render Height:</label>
+          <input
+            type="number"
+            id="render-height"
+            value="1000"
+            min="100"
+            max="3000"
+          />
+        </div>
+        <button id="apply-size-button" class="btn btn-secondary min-h-0 h-8">
+          Apply Size
+        </button>
       </div>
       <div id="lane-container">
         <div id="track-lane">
