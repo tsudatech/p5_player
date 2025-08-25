@@ -304,6 +304,9 @@ class EditorAPI:
                     block["code"] = code
                     save_blocks()
                     update_render_window(code)
+                    # トラックウィンドウに更新を通知
+                    if track_window:
+                        track_window.evaluate_js("loadTrackBlocks()")
                     break
         return {"blocks": code_blocks, "selected_code_id": selected_code_id}
 
@@ -312,6 +315,9 @@ class EditorAPI:
         if 0 <= index < len(code_blocks):
             code_blocks[index]["name"] = name
             save_blocks()
+            # トラックウィンドウに更新を通知
+            if track_window:
+                track_window.evaluate_js("loadTrackBlocks()")
         return {"blocks": code_blocks, "selected_code_id": selected_code_id}
 
     def get_block_by_id(self, block_id):
@@ -330,6 +336,9 @@ class EditorAPI:
             selected_code_id = moved_block_id
 
         save_blocks()
+        # トラックウィンドウに更新を通知
+        if track_window:
+            track_window.evaluate_js("loadTrackBlocks()")
         return {"blocks": code_blocks, "selected_code_id": selected_code_id}
 
     def delete_block(self, index):
@@ -352,6 +361,9 @@ class EditorAPI:
             code_blocks.pop(index)
 
             save_blocks()
+            # トラックウィンドウに更新を通知
+            if track_window:
+                track_window.evaluate_js("loadTrackBlocks()")
             return {"blocks": code_blocks, "selected_code_id": selected_code_id}
         return None
 
@@ -386,14 +398,52 @@ class TrackAPI:
         return {"status": "success"}
 
     def get_track_blocks(self):
-        """トラックブロックの一覧を取得"""
-        global track_blocks, track_bpm, track_delay
-        return {"track_blocks": track_blocks, "bpm": track_bpm, "delay": track_delay}
+        """トラックブロックの一覧を取得（現在のコードブロックデータで解決）"""
+        global track_blocks, track_bpm, track_delay, code_blocks
+
+        # トラックブロックを現在のコードブロックデータで解決
+        resolved_blocks = []
+        for track_block in track_blocks:
+            # 対応するコードブロックを検索
+            code_block = None
+            for cb in code_blocks:
+                if cb.get("id") == track_block.get("block_id"):
+                    code_block = cb
+                    break
+
+            if code_block:
+                # 現在のコードブロックデータで解決
+                resolved_block = {
+                    "block_id": track_block.get("block_id"),
+                    "name": code_block.get("name", "Unknown Block"),
+                    "code": code_block.get("code", ""),
+                    "duration": track_block.get("duration", 1000),
+                    "bars": track_block.get("bars", 8),
+                }
+                resolved_blocks.append(resolved_block)
+            else:
+                # 対応するコードブロックが見つからない場合は削除対象
+                print(
+                    f"Warning: Code block with id {track_block.get('block_id')} not found, skipping"
+                )
+
+        return {"track_blocks": resolved_blocks, "bpm": track_bpm, "delay": track_delay}
 
     def save_track_blocks(self, blocks):
-        """トラックブロックを保存"""
+        """トラックブロックを保存（参照データのみ）"""
         global track_blocks
-        track_blocks = blocks
+
+        # 参照データのみを保存（name, codeは除外）
+        reference_blocks = []
+        for block in blocks:
+            reference_block = {
+                "block_id": block.get("block_id"),
+                "duration": block.get("duration", 1000),
+                "bars": block.get("bars", 8),
+            }
+            reference_blocks.append(reference_block)
+
+        track_blocks = reference_blocks
         save_track_data()
         return {"status": "success"}
 
@@ -434,9 +484,17 @@ class TrackAPI:
         return {"status": "success"}
 
     def add_track_block(self, block_data):
-        """トラックにブロックを追加"""
+        """トラックにブロックを追加（参照データのみ）"""
         global track_blocks
-        track_blocks.append(block_data)
+
+        # 参照データのみを保存
+        reference_block = {
+            "block_id": block_data.get("id"),
+            "duration": block_data.get("duration", 1000),
+            "bars": block_data.get("bars", 8),
+        }
+
+        track_blocks.append(reference_block)
         save_track_data()
         return {"status": "success", "track_blocks": track_blocks}
 

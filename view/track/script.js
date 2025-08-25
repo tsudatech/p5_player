@@ -71,9 +71,15 @@ function loadTrackBlocks() {
 }
 
 function saveTrackBlocks() {
-  // Python側にトラックブロックを保存
+  // Python側にトラックブロックを保存（参照データのみ）
   if (window.pywebview && window.pywebview.api) {
-    window.pywebview.api.save_track_blocks(trackBlocks);
+    // 参照データのみを送信
+    const referenceBlocks = trackBlocks.map((block) => ({
+      block_id: block.block_id,
+      duration: block.duration,
+      bars: block.bars,
+    }));
+    window.pywebview.api.save_track_blocks(referenceBlocks);
   }
 }
 
@@ -205,7 +211,7 @@ function addTrackBlockInternal(blockData) {
   const duration = Math.round((60 / currentBpm) * 4 * bars * 1000); // BPMから8小節分の再生時間を計算（ミリ秒）
 
   const trackBlock = {
-    id: blockData.id,
+    block_id: blockData.id,
     name: blockData.name,
     code: blockData.code,
     duration: duration,
@@ -392,8 +398,8 @@ window.addTrackBlock = function (blockData) {
 
     window.pywebview.api.add_track_block(trackBlock).then((result) => {
       if (result.status === "success") {
-        trackBlocks = result.track_blocks;
-        renderTrackBlocks();
+        // 追加後に最新のデータを再読み込み
+        loadTrackBlocks();
       }
     });
   }
