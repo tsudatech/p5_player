@@ -194,44 +194,55 @@ def on_click(x, y, button, pressed):
             print(f"Click to play disabled - ignoring click")
 
 
-# キー押下のタイミングを記録
-key_press_times = {}
+# Ctrlキーの状態を追跡
+cmd_pressed = False
+ctrl_pressed = False
 
 
 def on_key_press(key):
-    global render_window, editor_window, track_window, key_press_times
+    global render_window, editor_window, track_window, cmd_pressed, ctrl_pressed
     try:
-        if hasattr(key, "char"):
-            current_time = time.time()
+        # Ctrlキーの押下を検出
+        if hasattr(key, "name") and key.name == "cmd":
+            cmd_pressed = True
+            return
+
+        if hasattr(key, "name") and key.name == "ctrl":
+            ctrl_pressed = True
+            return
+
+        # 文字キーの処理
+        if hasattr(key, "char") and cmd_pressed:
             key_char = key.char.lower()
+            if key_char == "h":
+                print("Ctrl+H pressed - hiding all windows")
+                if render_window:
+                    render_window.hide()
+                if editor_window:
+                    editor_window.hide()
+                if track_window:
+                    track_window.hide()
+            elif key_char == "s" and ctrl_pressed:
+                print("Ctrl+S pressed - showing all windows")
+                if render_window:
+                    render_window.show()
+                if editor_window:
+                    editor_window.show()
+                if track_window:
+                    track_window.show()
 
-            # 前回の押下時刻を取得
-            last_press_time = key_press_times.get(key_char, 0)
+    except AttributeError:
+        pass
 
-            # 0.5秒以内の連続押下を検出
-            if current_time - last_press_time < 0.5:
-                if key_char == "h":
-                    print("Double H pressed - hiding all windows")
-                    if render_window:
-                        render_window.hide()
-                    if editor_window:
-                        editor_window.hide()
-                    if track_window:
-                        track_window.hide()
-                elif key_char == "s":
-                    print("Double S pressed - showing all windows")
-                    if render_window:
-                        render_window.show()
-                    if editor_window:
-                        editor_window.show()
-                    if track_window:
-                        track_window.show()
-                # 連続押下を検出したらタイミングをリセット
-                key_press_times[key_char] = 0
-            else:
-                # 初回押下の時刻を記録
-                key_press_times[key_char] = current_time
 
+def on_key_release(key):
+    global cmd_pressed, ctrl_pressed
+    try:
+        # Ctrlキーのリリースを検出
+        if hasattr(key, "name") and key.name == "cmd":
+            cmd_pressed = False
+        if hasattr(key, "name") and key.name == "ctrl":
+            ctrl_pressed = False
     except AttributeError:
         pass
 
@@ -242,7 +253,7 @@ def start_mouse_listener():
     from pynput import keyboard
 
     listener = mouse.Listener(on_click=on_click)
-    key_listener = keyboard.Listener(on_press=on_key_press)
+    key_listener = keyboard.Listener(on_press=on_key_press, on_release=on_key_release)
     listener.start()
     key_listener.start()
     return listener, key_listener
