@@ -82,7 +82,7 @@ function refreshBlockList() {
      */
     addTrackButton.onclick = (e) => {
       e.stopPropagation();
-      addBlockToTrack(i);
+      showLaneSelectionDialog(i);
     };
 
     // 削除ボタン
@@ -463,16 +463,107 @@ function handleDeleteClick(index, button, blockName) {
 }
 
 /**
+ * レーン選択ダイアログを表示する
+ * @param {number} blockIndex - 追加するブロックのインデックス
+ */
+function showLaneSelectionDialog(blockIndex) {
+  // 既存のダイアログがあれば削除
+  const existingDialog = document.getElementById("lane-selection-dialog");
+  if (existingDialog) {
+    existingDialog.remove();
+  }
+
+  // ダイアログを作成
+  const dialog = document.createElement("div");
+  dialog.id = "lane-selection-dialog";
+  dialog.className =
+    "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+
+  dialog.innerHTML = `
+    <div class="bg-base-200 p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+      <h3 class="text-lg font-semibold mb-4">Select Lane</h3>
+      <div id="lane-options" class="space-y-2 mb-4">
+        <div class="flex items-center">
+          <input type="radio" id="lane-0" name="lane" value="0" checked class="mr-2">
+          <label for="lane-0">Lane 1</label>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2">
+        <button id="cancel-lane-selection" class="btn btn-ghost">Cancel</button>
+        <button id="confirm-lane-selection" class="btn btn-primary">Add to Lane</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(dialog);
+
+  // レーン情報を取得して更新
+  if (window.pywebview && window.pywebview.api) {
+    window.pywebview.api
+      .get_track_info_for_editor()
+      .then((data) => {
+        const laneOptions = document.getElementById("lane-options");
+        laneOptions.innerHTML = "";
+
+        const lanes = data.lanes || [];
+        lanes.forEach((lane) => {
+          const laneDiv = document.createElement("div");
+          laneDiv.className = "flex items-center";
+          laneDiv.innerHTML = `
+          <input type="radio" id="lane-${lane.lane_index}" name="lane" value="${
+            lane.lane_index
+          }" ${lane.lane_index === 0 ? "checked" : ""} class="mr-2">
+          <label for="lane-${lane.lane_index}">${lane.lane_name} (${
+            lane.block_count
+          } blocks)</label>
+        `;
+          laneOptions.appendChild(laneDiv);
+        });
+      })
+      .catch((error) => {
+        console.error("Error getting track info:", error);
+        // エラーが発生した場合はデフォルトのレーンを表示
+        const laneOptions = document.getElementById("lane-options");
+        laneOptions.innerHTML = `
+        <div class="flex items-center">
+          <input type="radio" id="lane-0" name="lane" value="0" checked class="mr-2">
+          <label for="lane-0">Lane 1 (0 blocks)</label>
+        </div>
+      `;
+      });
+  }
+
+  // イベントリスナーを追加
+  document.getElementById("cancel-lane-selection").onclick = () => {
+    dialog.remove();
+  };
+
+  document.getElementById("confirm-lane-selection").onclick = () => {
+    const selectedLane = document.querySelector(
+      'input[name="lane"]:checked'
+    ).value;
+    addBlockToTrack(blockIndex, parseInt(selectedLane));
+    dialog.remove();
+  };
+
+  // 背景クリックでダイアログを閉じる
+  dialog.onclick = (e) => {
+    if (e.target === dialog) {
+      dialog.remove();
+    }
+  };
+}
+
+/**
  * 指定したインデックスのブロックをトラックに追加する
  * @param {number} index - 追加するブロックのインデックス
+ * @param {number} laneIndex - 追加するレーンのインデックス
  */
-function addBlockToTrack(index) {
+function addBlockToTrack(index, laneIndex = 0) {
   if (index >= 0 && index < blocks.length) {
     // Python側のAPIを呼び出してトラックに追加
-    window.pywebview.api.add_block_to_track(index).then((result) => {
-      if (result.status === "success") {
-        console.log("Block added to track successfully");
-      } else {
+    window.pywebview.api.add_block_to_track(index, laneIndex).then((result) => {
+      if (result.status != "success") {
         console.error("Failed to add block to track:", result.message);
       }
     });

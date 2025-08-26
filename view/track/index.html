@@ -67,10 +67,23 @@
         <button id="apply-size-button" class="btn btn-secondary min-h-0 h-8">
           Apply Size
         </button>
+        <button id="add-lane-button" class="btn btn-accent min-h-0 h-8">
+          Add Lane
+        </button>
       </div>
-      <div id="lane-container">
-        <div id="track-lane">
-          <!-- トラックに追加されたブロックがここに表示される -->
+      <div id="lanes-container">
+        <div id="lane-0" class="lane-container">
+          <div class="lane-header">
+            <span class="lane-title">Lane 1</span>
+            <div class="lane-controls">
+              <button class="lane-remove-btn" onclick="removeLane(0)">×</button>
+            </div>
+          </div>
+          <div class="lane-content">
+            <div id="track-lane-0" class="track-lane">
+              <!-- トラックに追加されたブロックがここに表示される -->
+            </div>
+          </div>
         </div>
       </div>
     </div>

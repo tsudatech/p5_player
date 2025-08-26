@@ -39,7 +39,6 @@ def start_image_server():
     try:
         # 画像ディレクトリが存在しない場合は作成
         os.makedirs("images", exist_ok=True)
-
         server = HTTPServer(("localhost", image_server_port), ImageRequestHandler)
         server_thread = threading.Thread(target=server.serve_forever, daemon=True)
         server_thread.start()
@@ -94,17 +93,34 @@ def load_track_data():
             with open(TRACK_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 track_blocks = data.get("track_blocks", [])
+
+                # 空の配列や不正な形式の場合はデフォルト値を使用
+                if not track_blocks or not isinstance(track_blocks, list):
+                    track_blocks = [[]]
+
                 track_bpm = data.get("bpm", 120)
                 track_delay = data.get("delay", 0)
                 render_width = data.get("render_width", 1000)
                 render_height = data.get("render_height", 1000)
+
         except Exception as e:
-            print("Error loading track data:", e)
-            track_blocks = []
+            print(f"Error loading track data: {e}")
+            track_blocks = [[]]  # デフォルトで1つの空のレーン
             track_bpm = 120
             track_delay = 0
             render_width = 1000
             render_height = 1000
+    else:
+        track_blocks = [[]]  # デフォルトで1つの空のレーン
+        track_bpm = 120
+        track_delay = 0
+        render_width = 1000
+        render_height = 1000
+
+    # 最終確認：最低1つのレーンが存在することを保証
+    if not track_blocks or len(track_blocks) == 0:
+        print("No lanes found, creating default lane")
+        track_blocks = [[]]
 
 
 def save_track_data():
@@ -113,25 +129,23 @@ def save_track_data():
     os.makedirs("data", exist_ok=True)
 
     try:
+        data_to_save = {
+            "bpm": track_bpm,
+            "delay": track_delay,
+            "track_blocks": track_blocks,
+            "render_width": render_width,
+            "render_height": render_height,
+        }
+
         with open(TRACK_FILE, "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "bpm": track_bpm,
-                    "delay": track_delay,
-                    "track_blocks": track_blocks,
-                    "render_width": render_width,
-                    "render_height": render_height,
-                },
-                f,
-                ensure_ascii=False,
-                indent=2,
-            )
+            json.dump(data_to_save, f, ensure_ascii=False, indent=2)
+
     except Exception as e:
         print("Error saving track data:", e)
 
 
-def update_render_window(code: str):
-    """iframeごと作り直してp5.jsスケッチを安全に再注入"""
+def update_render_window(code: str, lane_index=0):
+    """iframeごと作り直してp5.jsスケッチを安全に再注入（レーン対応）"""
     global render_window, image_server_port
     if render_window:
         # バッククォートとバックスラッシュをエスケープ
@@ -147,19 +161,32 @@ def update_render_window(code: str):
         )
 
         js_code = f"""
-        // 既存のiframeを削除
-        const oldFrame = document.getElementById("p5-frame");
-        if (oldFrame) oldFrame.remove();
+        // レーン {lane_index} のスムーズな切り替え
+        let currentFrame = document.getElementById("p5-frame-lane-{lane_index}");
+        
+        // 新しいiframeを作成（非表示で）
+        const newFrame = document.createElement("iframe");
+        newFrame.id = "p5-frame-lane-{lane_index}-new";
+        newFrame.style.border = "none";
+        newFrame.style.width = "100vw";
+        newFrame.style.height = "100vh";
+        newFrame.style.position = "absolute";
+        newFrame.style.top = "0";
+        newFrame.style.left = "0";
+        newFrame.style.zIndex = "{lane_index + 1}";
+        newFrame.style.pointerEvents = "none";
+        newFrame.style.opacity = "0";
+        newFrame.style.transition = "opacity 0.15s ease-in-out";
+        document.body.appendChild(newFrame);
 
-        // 新しいiframeを作成
-        const iframe = document.createElement("iframe");
-        iframe.id = "p5-frame";
-        iframe.style.border = "none";
-        iframe.style.width = "100vw";
-        iframe.style.height = "100vh";
+        // 既存のiframeを前面に
+        if (currentFrame) {{
+            currentFrame.style.zIndex = "{lane_index + 1}";
+            currentFrame.style.transition = "opacity 0.15s ease-in-out";
+        }}
 
-        // srcdocでp5ライブラリとスケッチを注入
-        iframe.srcdoc = `
+        // 新しいiframeにsrcdocを設定
+        newFrame.srcdoc = `
           <!DOCTYPE html>
           <html>
           <head>
@@ -169,9 +196,11 @@ def update_render_window(code: str):
                 margin: 0;
                 padding: 0;
                 overflow: hidden;
+                background: transparent;
               }}
               canvas {{
                 display: block;
+                background: transparent;
               }}
             </style>
             <script src="https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js"></script>
@@ -184,7 +213,32 @@ def update_render_window(code: str):
           </html>
         `;
 
-        document.body.appendChild(iframe);
+        // 新しいiframeが読み込まれたら切り替え
+        newFrame.onload = function() {{
+            // 新しいiframeをフェードイン
+            newFrame.style.opacity = "1";
+            
+            // 古いiframeをフェードアウト
+            if (currentFrame) {{
+                currentFrame.style.opacity = "0";
+            }}
+            
+            // フェード完了後に古いiframeを削除
+            setTimeout(function() {{
+                if (currentFrame) {{
+                    currentFrame.remove();
+                }}
+                // 新しいiframeのIDを正しいものに変更
+                newFrame.id = "p5-frame-lane-{lane_index}";
+                newFrame.style.zIndex = "auto";
+            }}, 150);
+        }};
+
+        // 既存のiframeがない場合は即座に表示
+        if (!currentFrame) {{
+            newFrame.style.opacity = "1";
+            newFrame.id = "p5-frame-lane-{lane_index}";
+        }}
         """
 
         render_window.evaluate_js(js_code)
@@ -199,8 +253,7 @@ def on_click(x, y, button, pressed):
         if click_to_play_enabled:
             print(f"Click to play enabled! Triggering play...")
             if track_window:
-                # トラックウィンドウにplayコマンドを送信
-                time.sleep(track_delay / 1000.0)  # Convert ms to seconds
+                # トラックウィンドウにplayコマンドを送信（delay処理はJavaScript側で行う）
                 track_window.evaluate_js("playCurrentTrack()")
         else:
             print(f"Click to play disabled - ignoring click")
@@ -290,13 +343,15 @@ class EditorAPI:
         save_blocks()
         return {"blocks": code_blocks, "selected_code_id": selected_code_id}
 
-    def add_block_to_track(self, index):
+    def add_block_to_track(self, index, lane_index=0):
         """ブロックをトラックに追加"""
         global code_blocks, track_window
         if 0 <= index < len(code_blocks):
             block = code_blocks[index]
             if track_window:
-                track_window.evaluate_js(f"addTrackBlock({block})")
+                track_window.evaluate_js(
+                    f"addTrackBlock({json.dumps(block)}, {lane_index})"
+                )
             return {"status": "success"}
         return {"status": "error", "message": "Invalid block index"}
 
@@ -394,6 +449,29 @@ class EditorAPI:
             # ブロックが空なら何もしない
             return {"code": "", "selected_code_id": None}
 
+    def get_track_info_for_editor(self):
+        """エディタ側でレーン選択ダイアログ用のトラック情報を取得"""
+        global track_blocks, track_bpm, track_delay, render_width, render_height
+        try:
+            # レーン情報のみを返す（コードブロックの詳細は含めない）
+            lane_info = []
+            for lane_index, lane_blocks in enumerate(track_blocks):
+                lane_info.append(
+                    {
+                        "lane_index": lane_index,
+                        "lane_name": f"Lane {lane_index + 1}",
+                        "block_count": len(lane_blocks),
+                    }
+                )
+
+            return {"lanes": lane_info, "total_lanes": len(track_blocks)}
+        except Exception as e:
+            print(f"Error getting track info for editor: {e}")
+            return {
+                "lanes": [{"lane_index": 0, "lane_name": "Lane 1", "block_count": 0}],
+                "total_lanes": 1,
+            }
+
 
 class RenderAPI:
     def notify_ready(self):
@@ -425,82 +503,113 @@ class RenderAPI:
 
 
 class TrackAPI:
-    def play_track_block(self, code):
-        """トラックウィンドウから送信されたコードを実行"""
-        global render_window
-        if render_window:
-            update_render_window(code)
-        return {"status": "success"}
-
     def get_track_blocks(self):
         """トラックブロックの一覧を取得（現在のコードブロックデータで解決）"""
-        global track_blocks, track_bpm, track_delay, code_blocks
+        global track_blocks, track_bpm, track_delay, code_blocks, render_width, render_height
+        try:
+            # トラックブロックを現在のコードブロックデータで解決
+            resolved_lanes = []
+            for lane_index, lane_blocks in enumerate(track_blocks):
+                resolved_blocks = []
+                for block_index, track_block in enumerate(lane_blocks):
+                    try:
+                        # 対応するコードブロックを検索
+                        code_block = None
+                        for cb in code_blocks:
+                            if cb.get("id") == track_block.get("block_id"):
+                                code_block = cb
+                                break
 
-        # トラックブロックを現在のコードブロックデータで解決
-        resolved_blocks = []
-        for track_block in track_blocks:
-            # 対応するコードブロックを検索
-            code_block = None
-            for cb in code_blocks:
-                if cb.get("id") == track_block.get("block_id"):
-                    code_block = cb
-                    break
+                        if code_block:
+                            # 現在のコードブロックデータで解決
+                            resolved_block = {
+                                "block_id": track_block.get("block_id"),
+                                "name": code_block.get("name", "Unknown Block"),
+                                "code": code_block.get("code", ""),
+                                "duration": track_block.get("duration", 1000),
+                                "bars": track_block.get("bars", 8),
+                            }
+                            resolved_blocks.append(resolved_block)
+                        else:
+                            # 対応するコードブロックが見つからない場合は削除対象
+                            print(
+                                f"Warning: Code block with id {track_block.get('block_id')} not found, skipping"
+                            )
+                    except Exception as e:
+                        print(
+                            f"Error processing block {block_index} in lane {lane_index}: {e}"
+                        )
+                        continue
 
-            if code_block:
-                # 現在のコードブロックデータで解決
-                resolved_block = {
-                    "block_id": track_block.get("block_id"),
-                    "name": code_block.get("name", "Unknown Block"),
-                    "code": code_block.get("code", ""),
-                    "duration": track_block.get("duration", 1000),
-                    "bars": track_block.get("bars", 8),
-                }
-                resolved_blocks.append(resolved_block)
-            else:
-                # 対応するコードブロックが見つからない場合は削除対象
-                print(
-                    f"Warning: Code block with id {track_block.get('block_id')} not found, skipping"
-                )
+                resolved_lanes.append(resolved_blocks)
 
-        return {
-            "track_blocks": resolved_blocks,
-            "bpm": track_bpm,
-            "delay": track_delay,
-            "render_width": render_width,
-            "render_height": render_height,
-        }
+            result = {
+                "track_blocks": resolved_lanes,
+                "bpm": track_bpm,
+                "delay": track_delay,
+                "render_width": render_width,
+                "render_height": render_height,
+            }
+
+            return result
+
+        except Exception as e:
+            print(f"Error in get_track_blocks: {e}")
+            # エラーが発生した場合はデフォルト値を返す
+            return {
+                "track_blocks": [[]],
+                "bpm": 120,
+                "delay": 0,
+                "render_width": 1000,
+                "render_height": 1000,
+            }
 
     def save_track_blocks(self, blocks):
         """トラックブロックを保存（参照データのみ）"""
         global track_blocks
 
         # 参照データのみを保存（name, codeは除外）
-        reference_blocks = []
-        for block in blocks:
-            reference_block = {
-                "block_id": block.get("block_id"),
-                "duration": block.get("duration", 1000),
-                "bars": block.get("bars", 8),
-            }
-            reference_blocks.append(reference_block)
+        reference_lanes = []
+        for lane_index, lane_blocks in enumerate(blocks):
+            reference_blocks = []
+            for block_index, block in enumerate(lane_blocks):
+                reference_block = {
+                    "block_id": block.get("block_id"),
+                    "duration": block.get("duration", 1000),
+                    "bars": block.get("bars", 8),
+                }
+                reference_blocks.append(reference_block)
+            reference_lanes.append(reference_blocks)
 
-        track_blocks = reference_blocks
-        save_track_data()
-        return {"status": "success"}
+        track_blocks = reference_lanes
+        try:
+            save_track_data()
+            return {"status": "success"}
+        except Exception as e:
+            print(f"Error saving track blocks: {e}")
+            return {"status": "error", "message": str(e)}
 
     def update_bpm(self, bpm):
         """BPMを更新"""
         global track_bpm
         track_bpm = bpm
-        save_track_data()
-        return {"status": "success"}
+        try:
+            save_track_data()
+            return {"status": "success"}
+        except Exception as e:
+            print(f"Error saving BPM: {e}")
+            return {"status": "error", "message": str(e)}
 
     def update_delay(self, delay):
         """Delay timeを更新"""
         global track_delay
         track_delay = delay
-        save_track_data()
-        return {"status": "success"}
+        try:
+            save_track_data()
+            return {"status": "success"}
+        except Exception as e:
+            print(f"Error saving delay: {e}")
+            return {"status": "error", "message": str(e)}
 
     def hide_all_windows(self):
         """全てのウィンドウを隠す"""
@@ -524,9 +633,13 @@ class TrackAPI:
             track_window.show()
         return {"status": "success"}
 
-    def add_track_block(self, block_data):
+    def add_track_block(self, block_data, lane_index=0):
         """トラックにブロックを追加（参照データのみ）"""
         global track_blocks
+
+        # レーンが存在しない場合は作成
+        while len(track_blocks) <= lane_index:
+            track_blocks.append([])
 
         # 参照データのみを保存
         reference_block = {
@@ -535,7 +648,7 @@ class TrackAPI:
             "bars": block_data.get("bars", 8),
         }
 
-        track_blocks.append(reference_block)
+        track_blocks[lane_index].append(reference_block)
         save_track_data()
         return {"status": "success", "track_blocks": track_blocks}
 
@@ -554,11 +667,19 @@ class TrackAPI:
 
         # レンダーウィンドウのサイズを変更
         if render_window:
-            render_window.resize(width, height)
+            try:
+                render_window.resize(width, height)
+            except Exception as e:
+                print(f"Error resizing render window: {e}")
+                return {"status": "error", "message": str(e)}
 
         # 設定を保存
-        save_track_data()
-        print(f"Render window size updated: {width}x{height}")
+        try:
+            save_track_data()
+        except Exception as e:
+            print(f"Error saving track data: {e}")
+            return {"status": "error", "message": str(e)}
+
         return {"status": "success"}
 
     def get_render_size(self):
@@ -566,97 +687,196 @@ class TrackAPI:
         global render_width, render_height
         return {"width": render_width, "height": render_height}
 
+    def play_multiple_lanes(self, lane_data):
+        """複数レーンの同時再生"""
+        global render_window
+        if render_window:
+            try:
+                # アクティブなレーンのインデックスを取得
+                active_lane_indices = [
+                    lane_info.get("lane_index", 0) for lane_info in lane_data
+                ]
+
+                # 全レーンのiframeを一旦クリア
+                js_code = """
+                // 全レーンのiframeを削除
+                const laneFrames = document.querySelectorAll('[id^="p5-frame-lane-"]');
+                laneFrames.forEach(frame => frame.remove());
+                console.log('All lane iframes cleared before playing active lanes');
+                """
+                render_window.evaluate_js(js_code)
+
+                # アクティブなレーンのコードを個別に実行
+                for lane_info in lane_data:
+                    lane_index = lane_info.get("lane_index", 0)
+                    code = lane_info.get("code", "")
+                    if code:
+                        update_render_window(code, lane_index)
+
+                return {"status": "success", "lanes_played": len(lane_data)}
+            except Exception as e:
+                print(f"Error playing multiple lanes: {e}")
+                return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Render window not available"}
+
+    def clear_all_lanes(self):
+        """全レーンのiframeをクリア"""
+        global render_window
+        if render_window:
+            try:
+                js_code = """
+                // 全レーンのiframeを削除
+                const laneFrames = document.querySelectorAll('[id^="p5-frame-lane-"]');
+                laneFrames.forEach(frame => frame.remove());
+                console.log('All lane iframes cleared');
+                """
+                render_window.evaluate_js(js_code)
+                return {"status": "success"}
+            except Exception as e:
+                print(f"Error clearing lanes: {e}")
+                return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Render window not available"}
+
+    def clear_specific_lane(self, lane_index):
+        """特定のレーンのiframeをクリア"""
+        global render_window
+        if render_window:
+            try:
+                js_code = f"""
+                // 特定のレーンのiframeを削除
+                const laneFrame = document.getElementById("p5-frame-lane-{lane_index}");
+                if (laneFrame) {{
+                    laneFrame.remove();
+                    console.log('Lane {lane_index + 1} iframe cleared');
+                }}
+                """
+                render_window.evaluate_js(js_code)
+                return {"status": "success"}
+            except Exception as e:
+                print(f"Error clearing lane {lane_index + 1}: {e}")
+                return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Render window not available"}
+
+    def update_single_lane(self, lane_index, code):
+        """特定のレーンのiframeのみを更新（他のレーンに影響しない）"""
+        global render_window
+        if render_window:
+            try:
+                update_render_window(code, lane_index)
+                return {"status": "success"}
+            except Exception as e:
+                print(f"Error updating single lane {lane_index + 1}: {e}")
+                return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Render window not available"}
+
 
 if __name__ == "__main__":
-    load_blocks()
-    load_track_data()
+    try:
+        print("Starting p5_player...")
+        load_blocks()
+        print("Blocks loaded successfully")
 
-    # 画像サーバーを起動
-    image_server = start_image_server()
+        load_track_data()
+        print("Track data loaded successfully")
 
-    editor_api = EditorAPI()
-    render_api = RenderAPI()
-    track_api = TrackAPI()
+        # 画像サーバーを起動
+        image_server = start_image_server()
 
-    # 固定のベースHTML（常に同じ構造を使用）
-    initial_html = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <style>
-            body {
-                margin: 0;
-                padding: 0;
-                background: transparent;
-                overflow: hidden;
-            }
-            canvas {
-                display: block;
-            }
-        </style>
-        <script>
-            let lastSize = {width: window.innerWidth, height: window.innerHeight};
-            let resizeTimeout = null;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(() => {
-                    const newSize = {width: window.innerWidth, height: window.innerHeight};
-                    if (newSize.width !== lastSize.width || newSize.height !== lastSize.height) {
-                        lastSize = newSize;
-                        if (window.pywebview?.api) {
-                            window.pywebview.api.on_render_window_resize(newSize.width, newSize.height);
+        editor_api = EditorAPI()
+        render_api = RenderAPI()
+        track_api = TrackAPI()
+
+        # 固定のベースHTML（常に同じ構造を使用）
+        initial_html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {
+                    margin: 0;
+                    padding: 0;
+                    background: transparent;
+                    overflow: hidden;
+                }
+                canvas {
+                    display: block;
+                }
+                iframe {
+                    transition: opacity 0.15s ease-in-out;
+                }
+            </style>
+            <script>
+                let lastSize = {width: window.innerWidth, height: window.innerHeight};
+                let resizeTimeout = null;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => {
+                        const newSize = {width: window.innerWidth, height: window.innerHeight};
+                        if (newSize.width !== lastSize.width || newSize.height !== lastSize.height) {
+                            lastSize = newSize;
+                            if (window.pywebview?.api) {
+                                window.pywebview.api.on_render_window_resize(newSize.width, newSize.height);
+                            }
                         }
-                    }
-                }, 50);
-            });
-        </script>
-    </head>
-    <body>
-    </body>
-    </html>
-    """
+                    }, 50);
+                });
+            </script>
+        </head>
+        <body>
+        </body>
+        </html>
+        """
 
-    # 最初のブロックがある場合は初期化時にscriptタグを追加
-    if code_blocks:
-        selected_code_id = code_blocks[0]["id"]
+        # 最初のブロックがある場合は初期化時にscriptタグを追加
+        if code_blocks:
+            selected_code_id = code_blocks[0]["id"]
 
-    render_window = webview.create_window(
-        "Transparent Always on Top p5.js",
-        html=initial_html,
-        js_api=render_api,
-        width=render_width,
-        height=render_height,
-        x=0,
-        y=250,
-        frameless=True,
-        transparent=True,
-        on_top=True,
-    )
+        print("Creating render window...")
+        render_window = webview.create_window(
+            "Transparent Always on Top p5.js",
+            html=initial_html,
+            js_api=render_api,
+            width=render_width,
+            height=render_height,
+            x=0,
+            y=250,
+            frameless=True,
+            transparent=True,
+            on_top=True,
+        )
 
-    editor_window = webview.create_window(
-        "Code Editor",
-        "view/editor/index.html",
-        js_api=editor_api,
-        width=1000,
-        height=1000,
-        x=1000,
-        y=250,
-        on_top=True,
-    )
+        print("Creating editor window...")
+        editor_window = webview.create_window(
+            "Code Editor",
+            "view/editor/index.html",
+            js_api=editor_api,
+            width=1000,
+            height=1000,
+            x=1000,
+            y=250,
+            on_top=True,
+        )
 
-    track_window = webview.create_window(
-        "Track Window",
-        "view/track/index.html",
-        js_api=track_api,
-        width=2000,
-        height=200,
-        x=0,
-        y=0,
-        on_top=True,
-    )
+        print("Creating track window...")
+        track_window = webview.create_window(
+            "Track Window",
+            "view/track/index.html",
+            js_api=track_api,
+            width=2000,
+            height=200,
+            x=0,
+            y=0,
+            on_top=True,
+        )
 
-    # マウスリスナーとキーボードリスナーを起動
-    mouse_listener, key_listener = start_mouse_listener()
-    webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
-    webview.start(debug=True)
+        # マウスリスナーとキーボードリスナーを起動
+        mouse_listener, key_listener = start_mouse_listener()
+        webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
+        webview.start(debug=True)
+
+    except Exception as e:
+        print(f"Error during startup: {e}")
+        import traceback
+
+        traceback.print_exc()

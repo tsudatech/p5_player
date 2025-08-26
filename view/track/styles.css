@@ -1,10 +1,9 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: Arial, sans-serif;
-  background: #2d2d2d;
-  color: #ffffff;
-  overflow: hidden;
+  background-color: #1f2937;
+  color: #f9fafb;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .btn,
@@ -19,15 +18,17 @@ input,
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 100vw;
+  overflow: hidden;
 }
 
 #controls {
   display: flex;
   align-items: center;
-  padding: 12px 20px;
-  border-bottom: 1px solid #555;
-  gap: 15px;
+  gap: 10px;
+  padding: 10px;
+  background-color: #374151;
+  border-bottom: 1px solid #4b5563;
+  flex-shrink: 0;
 }
 
 .control-group {
@@ -37,168 +38,177 @@ input,
 }
 
 .control-group label {
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
-#bpm-input {
+.control-group input {
   width: 60px;
-  padding: 5px;
-  border: 1px solid #555;
-  border-radius: 3px;
-  background: #4d4d4d;
-  color: #ffffff;
-  font-size: 14px;
+  height: 24px;
+  font-size: 12px;
+  padding: 2px 4px;
 }
 
-#bpm-input:focus {
-  outline: none;
-  border-color: #007acc;
-}
-
-#delay-input {
-  width: 60px;
-  padding: 5px;
-  border: 1px solid #555;
-  border-radius: 3px;
-  background: #4d4d4d;
-  color: #ffffff;
-  font-size: 14px;
-}
-
-#delay-input:focus {
-  outline: none;
-  border-color: #007acc;
-}
-
-#play-button:hover {
-  background: #218838;
-}
-
-#play-button:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-}
-
-#stop-button:hover {
-  background: #c82333;
-}
-
-#stop-button:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-}
-
-#lane-container {
-  flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 8px 20px;
-}
-
-#track-lane {
+#lanes-container {
   display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
   gap: 10px;
-  min-height: 100px;
+}
+
+.lane-container {
+  background-color: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  min-height: 120px;
+}
+
+.lane-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #4b5563;
+  border-bottom: 1px solid #6b7280;
+  border-radius: 4px 4px 0 0;
+}
+
+.lane-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.lane-controls {
+  display: flex;
+  gap: 4px;
   align-items: center;
 }
 
-.track-block {
-  border-radius: 5px;
+.lane-remove-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+}
+
+.lane-remove-btn:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+.lane-content {
   padding: 10px;
-  min-width: 120px;
-  max-width: 150px;
-  height: 80px;
+}
+
+.track-lane {
+  display: flex;
+  gap: 8px;
+  min-height: 80px;
+  align-items: center;
+  padding: 8px;
+  background-color: #1f2937;
+  border-radius: 4px;
+  border: 1px dashed #6b7280;
+}
+
+.track-block {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  cursor: grab;
+  align-items: center;
+  padding: 8px;
+  background-color: #4b5563;
+  border: 1px solid #6b7280;
+  border-radius: 4px;
+  min-width: 80px;
+  cursor: pointer;
   transition: all 0.2s;
   position: relative;
-  user-select: none;
+}
+
+.track-block:hover {
+  background-color: #6b7280;
+  transform: translateY(-1px);
+}
+
+.track-block.selected {
+  border-color: #8b5cf6;
+  background-color: #8b5cf6;
+  color: white;
+}
+
+.track-block.playing {
+  border-color: #10b981;
+  background-color: #10b981;
+  color: white;
+  animation: pulse 0.5s ease-in-out;
+}
+
+.track-block.completed {
+  opacity: 0.6;
 }
 
 .track-block.dragging {
   opacity: 0.5;
-  background: #5d5d5d;
-  cursor: grabbing;
+  transform: rotate(5deg);
 }
 
 .track-block.drag-over {
-  border-color: #737c83;
-  background: #3d5d5d;
-}
-
-.track-block.selected {
-  background: #2d3d5d;
-  box-shadow: 0 0 5px rgba(0, 122, 204, 0.5);
-}
-
-.track-block.playing {
-  border-color: #28a745;
-  background: #2d5d2d;
-}
-
-.track-block.completed {
-  border-color: #6c757d;
-  background: #3d3d3d;
-  opacity: 0.7;
+  border-color: #f59e0b;
+  background-color: #f59e0b;
+  color: white;
 }
 
 .track-block-name {
-  font-size: 12px;
-  font-weight: bold;
-  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
   text-align: center;
+  margin-bottom: 4px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 70px;
 }
 
 .track-block-duration {
   font-size: 10px;
-  color: #aaa;
-  text-align: center;
+  opacity: 0.7;
+  margin-bottom: 4px;
 }
 
 .track-block-bars {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
+  gap: 4px;
+  font-size: 10px;
 }
 
 .track-block-bars label {
-  font-size: 10px;
-  color: #aaa;
+  font-size: 9px;
 }
 
 .track-block-bars input {
-  width: 30px;
-  padding: 2px;
-  border: 1px solid #555;
-  border-radius: 2px;
-  background: #4d4d4d;
-  color: #ffffff;
+  width: 40px;
+  height: 18px;
   font-size: 10px;
-  text-align: center;
-}
-
-.track-block-bars input:focus {
-  outline: none;
-  border-color: #007acc;
+  padding: 1px 2px;
 }
 
 .track-block-remove {
   position: absolute;
-  top: -5px;
-  right: -5px;
-  width: 20px;
-  height: 20px;
-  background: #dc3545;
+  top: -6px;
+  right: -6px;
+  background-color: #ef4444;
   color: white;
   border: none;
   border-radius: 50%;
+  width: 18px;
+  height: 18px;
   font-size: 12px;
   cursor: pointer;
   display: flex;
@@ -212,6 +222,38 @@ input,
   opacity: 1;
 }
 
-.track-block-remove:hover {
-  background: #c82333;
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.drop-zone {
+  height: 4px;
+  background: transparent;
+  margin: 2px 0;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.drop-zone.drag-over {
+  background: #8b5cf6;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.drop-zone.drag-over::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -2px;
+  bottom: -2px;
+  background: #8b5cf6;
+  border-radius: 3px;
+  z-index: -1;
 }
