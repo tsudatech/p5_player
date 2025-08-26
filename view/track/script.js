@@ -470,6 +470,13 @@ function startPlayback() {
 
   isPlaying = true;
 
+  // エディタの単一iframeをクリア
+  if (window.pywebview && window.pywebview.api) {
+    window.pywebview.api.clear_single_iframe().catch((error) => {
+      console.error("Error clearing single iframe:", error);
+    });
+  }
+
   // 各レーンの再生状態を初期化
   currentPlayingIndexes = [];
   playIntervals = [];

@@ -2,3 +2,4 @@ code_blocks.json
 track_data.json
 images/
 .DS_Store
+__pycache__/
