@@ -1,8 +1,8 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #1f2937;
-  color: #f9fafb;
+  background-color: #0f172a;
+  color: #e2e8f0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -26,8 +26,8 @@ input,
   align-items: center;
   gap: 10px;
   padding: 10px;
-  background-color: #374151;
-  border-bottom: 1px solid #4b5563;
+  background-color: #1e293b;
+  border-bottom: 1px solid #334155;
   flex-shrink: 0;
 }
 
@@ -59,8 +59,8 @@ input,
 }
 
 .lane-container {
-  background-color: #374151;
-  border: 1px solid #4b5563;
+  background-color: #1e293b;
+  border: 1px solid #334155;
   border-radius: 4px;
   min-height: 120px;
 }
@@ -70,8 +70,8 @@ input,
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background-color: #4b5563;
-  border-bottom: 1px solid #6b7280;
+  background-color: #334155;
+  border-bottom: 1px solid #475569;
   border-radius: 4px 4px 0 0;
 }
 
@@ -112,9 +112,9 @@ input,
   min-height: 80px;
   align-items: center;
   padding: 8px;
-  background-color: #1f2937;
+  background-color: #0f172a;
   border-radius: 4px;
-  border: 1px dashed #6b7280;
+  border: 1px dashed #475569;
 }
 
 .track-block {
@@ -122,8 +122,8 @@ input,
   flex-direction: column;
   align-items: center;
   padding: 8px;
-  background-color: #4b5563;
-  border: 1px solid #6b7280;
+  background-color: #334155;
+  border: 1px solid #475569;
   border-radius: 4px;
   min-width: 80px;
   cursor: pointer;
@@ -132,19 +132,19 @@ input,
 }
 
 .track-block:hover {
-  background-color: #6b7280;
+  background-color: #475569;
   transform: translateY(-1px);
 }
 
 .track-block.selected {
-  border-color: #8b5cf6;
-  background-color: #8b5cf6;
+  border-color: #7c3aed;
+  background-color: #7c3aed;
   color: white;
 }
 
 .track-block.playing {
-  border-color: #10b981;
-  background-color: #10b981;
+  border-color: #059669;
+  background-color: #059669;
   color: white;
   animation: pulse 0.5s ease-in-out;
 }
@@ -159,8 +159,8 @@ input,
 }
 
 .track-block.drag-over {
-  border-color: #f59e0b;
-  background-color: #f59e0b;
+  border-color: #d97706;
+  background-color: #d97706;
   color: white;
 }
 
@@ -241,7 +241,7 @@ input,
 }
 
 .drop-zone.drag-over {
-  background: #8b5cf6;
+  background: #7c3aed;
   height: 6px;
   border-radius: 3px;
 }
@@ -253,7 +253,7 @@ input,
   right: 0;
   top: -2px;
   bottom: -2px;
-  background: #8b5cf6;
+  background: #7c3aed;
   border-radius: 3px;
   z-index: -1;
 }
