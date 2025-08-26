@@ -111,6 +111,13 @@ class TrackAPI:
             reference_lanes.append(reference_blocks)
 
         self.track_blocks = reference_lanes
+        # グローバルに反映
+        try:
+            import p5_player
+
+            p5_player.track_blocks = self.track_blocks
+        except Exception:
+            pass
         try:
             self.save_track_data()
             return {"status": "success"}
@@ -163,6 +170,13 @@ class TrackAPI:
         # レーンが存在しない場合は作成
         while len(self.track_blocks) <= lane_index:
             self.track_blocks.append([])
+            # グローバルにも新しいレーンを反映
+            try:
+                import p5_player
+
+                p5_player.track_blocks = self.track_blocks
+            except Exception:
+                pass
 
         # 参照データのみを保存
         reference_block = {

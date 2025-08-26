@@ -480,15 +480,10 @@ function showLaneSelectionDialog(blockIndex) {
     "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
 
   dialog.innerHTML = `
-    <div class="bg-base-200 p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+    <div class="bg-base-200 p-6 rounded-lg shadow-lg w-full max-w-md mx-4">
       <h3 class="text-lg font-semibold mb-4">Select Lane</h3>
-      <div id="lane-options" class="space-y-2 mb-4">
-        <div class="flex items-center">
-          <input type="radio" id="lane-0" name="lane" value="0" checked class="mr-2">
-          <label for="lane-0">Lane 1</label>
-        </div>
-      </div>
-      <div class="flex justify-end space-x-2">
+      <div id="lane-options" class="space-y-2 mb-6"></div>
+      <div class="flex justify-end gap-2 sticky bottom-0 bg-base-200 pt-2">
         <button id="cancel-lane-selection" class="btn btn-ghost">Cancel</button>
         <button id="confirm-lane-selection" class="btn btn-primary">Add to Lane</button>
       </div>

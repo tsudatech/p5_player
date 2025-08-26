@@ -163,6 +163,11 @@ if __name__ == "__main__":
             selected_code_id = code_blocks[0]["id"]
 
         # APIクラスのインスタンス化（依存関係を注入）
+        # グローバルcode_blocksを同期する関数
+        def set_code_blocks(new_blocks):
+            global code_blocks
+            code_blocks = new_blocks
+
         editor_api = EditorAPI(
             code_blocks=code_blocks,
             selected_code_id=selected_code_id,
@@ -170,6 +175,7 @@ if __name__ == "__main__":
             save_blocks_func=save_blocks,
             update_render_window_func=update_render_window,
             update_render_window_single_func=update_render_window_single,
+            set_code_blocks_func=set_code_blocks,
         )
 
         render_api = RenderAPI(
