@@ -8,6 +8,7 @@ from .render_utils import (
     create_base_html,
     create_single_iframe_js,
 )
+from .mouse_listener import MouseListenerManager
 
 __all__ = [
     "start_image_server",
@@ -19,4 +20,5 @@ __all__ = [
     "create_resize_handler_js",
     "create_base_html",
     "create_single_iframe_js",
+    "MouseListenerManager",
 ]

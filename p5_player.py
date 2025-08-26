@@ -1,14 +1,13 @@
 import os
 import webview
 import json
-from pynput import mouse
 from apis import EditorAPI, RenderAPI, TrackAPI
 from utils import (
     start_image_server,
     create_smooth_lane_switch_js,
     create_base_html,
     create_single_iframe_js,
-    create_clear_single_iframe_js,
+    MouseListenerManager,
 )
 
 render_window = None
@@ -25,9 +24,7 @@ DATA_FILE = "data/code_blocks.json"
 TRACK_FILE = "data/track_data.json"
 click_to_play_enabled = False
 image_server_port = 8080
-
-
-# 固定のベースHTML（常に同じ構造を使用）
+mouse_listener_manager = None
 initial_html = create_base_html()
 
 
@@ -36,16 +33,18 @@ def load_blocks():
     global code_blocks, selected_code_id
     # dataフォルダが存在しない場合は作成
     os.makedirs("data", exist_ok=True)
-    if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                code_blocks = data.get("blocks", [])
-                selected_code_id = data.get("selected_code_id", None)
-        except Exception as e:
-            print("Error loading data:", e)
-            code_blocks = []
-            selected_code_id = None
+    if not os.path.exists(DATA_FILE):
+        return
+
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            code_blocks = data.get("blocks", [])
+            selected_code_id = data.get("selected_code_id", None)
+    except Exception as e:
+        print("Error loading data:", e)
+        code_blocks = []
+        selected_code_id = None
 
 
 def save_blocks():
@@ -64,27 +63,17 @@ def load_track_data():
     # dataフォルダが存在しない場合は作成
     os.makedirs("data", exist_ok=True)
     if os.path.exists(TRACK_FILE):
-        try:
-            with open(TRACK_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                track_blocks = data.get("track_blocks", [])
+        with open(TRACK_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            track_blocks = data.get("track_blocks", [])
+            if not track_blocks or not isinstance(track_blocks, list):
+                track_blocks = [[]]
 
-                # 空の配列や不正な形式の場合はデフォルト値を使用
-                if not track_blocks or not isinstance(track_blocks, list):
-                    track_blocks = [[]]
+            track_bpm = data.get("bpm", 120)
+            track_delay = data.get("delay", 0)
+            render_width = data.get("render_width", 1000)
+            render_height = data.get("render_height", 1000)
 
-                track_bpm = data.get("bpm", 120)
-                track_delay = data.get("delay", 0)
-                render_width = data.get("render_width", 1000)
-                render_height = data.get("render_height", 1000)
-
-        except Exception as e:
-            print(f"Error loading track data: {e}")
-            track_blocks = [[]]  # デフォルトで1つの空のレーン
-            track_bpm = 120
-            track_delay = 0
-            render_width = 1000
-            render_height = 1000
     else:
         track_blocks = [[]]  # デフォルトで1つの空のレーン
         track_bpm = 120
@@ -158,86 +147,6 @@ def update_render_window_single(code: str):
         render_window.evaluate_js(js_code)
 
 
-def on_click(x, y, button, pressed):
-    global track_window, click_to_play_enabled
-    if pressed:
-        print(f"Mouse clicked at ({x}, {y}) with {button}")
-
-        # トグルがONの時のみplayを発火
-        if click_to_play_enabled:
-            print(f"Click to play enabled! Triggering play...")
-            if track_window:
-                # トラックウィンドウにplayコマンドを送信（delay処理はJavaScript側で行う）
-                track_window.evaluate_js("playCurrentTrack()")
-        else:
-            print(f"Click to play disabled - ignoring click")
-
-
-# Ctrlキーの状態を追跡
-cmd_pressed = False
-ctrl_pressed = False
-
-
-def on_key_press(key):
-    global render_window, editor_window, track_window, cmd_pressed, ctrl_pressed
-    try:
-        # Ctrlキーの押下を検出
-        if hasattr(key, "name") and key.name == "cmd":
-            cmd_pressed = True
-            return
-
-        if hasattr(key, "name") and key.name == "ctrl":
-            ctrl_pressed = True
-            return
-
-        # 文字キーの処理
-        if hasattr(key, "char") and cmd_pressed:
-            key_char = key.char.lower()
-            if key_char == "h":
-                print("Ctrl+H pressed - hiding all windows")
-                if render_window:
-                    render_window.hide()
-                if editor_window:
-                    editor_window.hide()
-                if track_window:
-                    track_window.hide()
-            elif key_char == "s" and ctrl_pressed:
-                print("Ctrl+S pressed - showing all windows")
-                if render_window:
-                    render_window.show()
-                if editor_window:
-                    editor_window.show()
-                if track_window:
-                    track_window.show()
-
-    except AttributeError:
-        pass
-
-
-def on_key_release(key):
-    global cmd_pressed, ctrl_pressed
-    try:
-        # Ctrlキーのリリースを検出
-        if hasattr(key, "name") and key.name == "cmd":
-            cmd_pressed = False
-        if hasattr(key, "name") and key.name == "ctrl":
-            ctrl_pressed = False
-    except AttributeError:
-        pass
-
-
-def start_mouse_listener():
-    """マウスリスナーとキーボードリスナーを別スレッドで起動"""
-    print("start_mouse_listener")
-    from pynput import keyboard
-
-    listener = mouse.Listener(on_click=on_click)
-    key_listener = keyboard.Listener(on_press=on_key_press, on_release=on_key_release)
-    listener.start()
-    key_listener.start()
-    return listener, key_listener
-
-
 if __name__ == "__main__":
     try:
         print("Starting p5_player...")
@@ -272,8 +181,10 @@ if __name__ == "__main__":
 
         # click_to_play_enabledを更新する関数
         def update_click_to_play_enabled(enabled):
-            global click_to_play_enabled
+            global click_to_play_enabled, mouse_listener_manager
             click_to_play_enabled = enabled
+            if mouse_listener_manager:
+                mouse_listener_manager.update_click_to_play_state(enabled)
 
         track_api = TrackAPI(
             track_blocks=track_blocks,
@@ -330,13 +241,16 @@ if __name__ == "__main__":
 
         # ウィンドウ参照をAPIクラスに設定
         editor_api.track_window = track_window
-        render_api.track_window = track_window
+        render_api.track_window = render_window
         track_api.render_window = render_window
         track_api.editor_window = editor_window
         track_api.track_window = track_window
 
-        # マウスリスナーとキーボードリスナーを起動
-        mouse_listener, key_listener = start_mouse_listener()
+        # マウスリスナーマネージャーを初期化して起動
+        mouse_listener_manager = MouseListenerManager(
+            track_window, click_to_play_enabled
+        )
+        mouse_listener_manager.start_listeners(render_window, editor_window)
         webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
         webview.start(debug=True)
 

@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", function () {
 window.addEventListener("pywebviewready", function () {
   console.log("Track window ready");
   loadTrackBlocks();
+  loadClickToPlayState();
 
   // 定期的にrender windowのサイズを確認（手動リサイズの検出）
   setInterval(checkRenderWindowSize, 1000);
@@ -133,6 +134,24 @@ function removeLane(laneId) {
 
   saveTrackBlocks();
   renderTrackBlocks();
+}
+
+function loadClickToPlayState() {
+  // Python側からclick to playの状態を読み込み
+  if (window.pywebview && window.pywebview.api) {
+    window.pywebview.api
+      .get_click_to_play_state()
+      .then((data) => {
+        clickToPlayEnabled = data.enabled;
+        const clickToggle = document.getElementById("click-toggle");
+        if (clickToggle) {
+          clickToggle.checked = clickToPlayEnabled;
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading click to play state:", error);
+      });
+  }
 }
 
 function updateClickToPlay() {

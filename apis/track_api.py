@@ -181,6 +181,13 @@ class TrackAPI:
             self.track_window.evaluate_js("stopPlayback()")
         return {"status": "success"}
 
+    def get_click_to_play_state(self):
+        """クリック再生の有効/無効状態を取得"""
+        # グローバル変数のclick_to_play_enabledの値を返す
+        import p5_player
+
+        return {"enabled": p5_player.click_to_play_enabled}
+
     def update_click_to_play_state(self, enabled):
         """クリック再生の有効/無効状態を更新"""
         if self.update_click_to_play:
