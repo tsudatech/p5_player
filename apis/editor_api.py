@@ -13,6 +13,7 @@ class EditorAPI:
         update_render_window_func,
         update_render_window_single_func,
         set_code_blocks_func,
+        p5_player_instance=None,
     ):
         self.code_blocks = code_blocks
         self.selected_code_id = selected_code_id
@@ -21,6 +22,7 @@ class EditorAPI:
         self.update_render_window = update_render_window_func
         self.update_render_window_single = update_render_window_single_func
         self.set_code_blocks = set_code_blocks_func
+        self.p5_player_instance = p5_player_instance
 
     def add_block(self):
         new_block = {
@@ -57,12 +59,12 @@ class EditorAPI:
         try:
             lanes_info = []
 
-            # 1) まずはグローバルを参照
-            try:
-                import p5_player  # グローバルのtrack_blocksを参照
-
-                track_blocks = getattr(p5_player, "track_blocks", []) or []
-            except Exception:
+            # 1) まずはP5Playerインスタンスを参照
+            if self.p5_player_instance:
+                track_blocks = (
+                    getattr(self.p5_player_instance, "track_blocks", []) or []
+                )
+            else:
                 track_blocks = []
 
             # 2) グローバルが空の場合はファイルから読み込み

@@ -21,6 +21,7 @@ class TrackAPI:
         save_track_data_func,
         update_render_window_func,
         update_click_to_play_func=None,
+        p5_player_instance=None,
     ):
         self.track_blocks = track_blocks
         self.track_bpm = track_bpm
@@ -34,6 +35,7 @@ class TrackAPI:
         self.save_track_data = save_track_data_func
         self.update_render_window = update_render_window_func
         self.update_click_to_play = update_click_to_play_func
+        self.p5_player_instance = p5_player_instance
 
     def get_track_blocks(self):
         """トラックブロックの一覧を取得（現在のコードブロックデータで解決）"""
@@ -111,18 +113,16 @@ class TrackAPI:
             reference_lanes.append(reference_blocks)
 
         self.track_blocks = reference_lanes
-        # グローバルに反映
-        try:
-            import p5_player
-
-            p5_player.track_blocks = self.track_blocks
-        except Exception:
-            pass
+        # P5Playerインスタンスに反映
+        if self.p5_player_instance:
+            self.p5_player_instance.track_blocks = self.track_blocks
+            print(
+                f"Updated P5Player track_blocks: {self.p5_player_instance.track_blocks}"
+            )
         try:
             self.save_track_data()
             return {"status": "success"}
         except Exception as e:
-            print(f"Error saving track blocks: {e}")
             return {"status": "error", "message": str(e)}
 
     def update_bpm(self, bpm):
@@ -170,13 +170,9 @@ class TrackAPI:
         # レーンが存在しない場合は作成
         while len(self.track_blocks) <= lane_index:
             self.track_blocks.append([])
-            # グローバルにも新しいレーンを反映
-            try:
-                import p5_player
-
-                p5_player.track_blocks = self.track_blocks
-            except Exception:
-                pass
+            # P5Playerインスタンスにも新しいレーンを反映
+            if self.p5_player_instance:
+                self.p5_player_instance.track_blocks = self.track_blocks
 
         # 参照データのみを保存
         reference_block = {
@@ -186,6 +182,9 @@ class TrackAPI:
         }
 
         self.track_blocks[lane_index].append(reference_block)
+        # P5Playerインスタンスにも反映
+        if self.p5_player_instance:
+            self.p5_player_instance.track_blocks = self.track_blocks
         self.save_track_data()
         return {"status": "success", "track_blocks": self.track_blocks}
 
@@ -197,10 +196,13 @@ class TrackAPI:
 
     def get_click_to_play_state(self):
         """クリック再生の有効/無効状態を取得"""
-        # グローバル変数のclick_to_play_enabledの値を返す
-        import p5_player
-
-        return {"enabled": p5_player.click_to_play_enabled}
+        # P5Playerインスタンスの状態を参照
+        enabled = False
+        if self.p5_player_instance is not None:
+            enabled = bool(
+                getattr(self.p5_player_instance, "click_to_play_enabled", False)
+            )
+        return {"enabled": enabled}
 
     def update_click_to_play_state(self, enabled):
         """クリック再生の有効/無効状態を更新"""
