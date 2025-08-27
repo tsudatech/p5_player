@@ -11,6 +11,9 @@ function refreshBlockList() {
   const listEl = document.getElementById("blockList");
   const dropIndicator = document.getElementById("dropIndicator");
 
+  // 現在のスクロール位置を保存
+  const scrollTop = listEl.scrollTop;
+
   // 既存のブロックアイテムとドロップゾーンを削除
   const existingItems = listEl.querySelectorAll(".block-item, .drop-zone");
   existingItems.forEach((item) => item.remove());
@@ -191,9 +194,10 @@ function refreshBlockList() {
 
     listEl.appendChild(item);
   });
-}
 
-/**
+  // スクロール位置を復元
+  listEl.scrollTop = scrollTop;
+}/**
  * ドロップインジケーターを表示する
  * @param {HTMLElement} element - 対象要素
  * @param {"before"|"after"} position - 表示位置
@@ -422,9 +426,29 @@ function selectBlock(i) {
     selectedCodeId = blocks[i].id;
     refreshBlockList();
     editor.setValue(code);
+    
+    // 選択されたブロックが表示されるようにスクロール位置を調整
+    setTimeout(() => {
+      const listEl = document.getElementById("blockList");
+      const selectedItem = listEl.querySelector(`[data-index="${i}"]`);
+      if (selectedItem) {
+        const itemRect = selectedItem.getBoundingClientRect();
+        const containerRect = listEl.getBoundingClientRect();
+        const scrollTop = listEl.scrollTop;
+        const itemTop = itemRect.top - containerRect.top + scrollTop;
+        const itemBottom = itemTop + itemRect.height;
+        const containerHeight = listEl.clientHeight;
+        
+        // アイテムが表示範囲外にある場合はスクロール位置を調整
+        if (itemTop < scrollTop) {
+          listEl.scrollTop = itemTop - 10; // 少し余白を追加
+        } else if (itemBottom > scrollTop + containerHeight) {
+          listEl.scrollTop = itemBottom - containerHeight + 10; // 少し余白を追加
+        }
+      }
+    }, 0);
   });
 }
-
 /**
  * 現在のエディタ内容を保存し、Python側で実行する
  */
