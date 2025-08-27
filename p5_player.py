@@ -241,7 +241,7 @@ class P5Player:
                 "view/track/index.html",
                 js_api=track_api,
                 width=2000,
-                height=200,
+                height=350,
                 x=0,
                 y=0,
                 on_top=True,
