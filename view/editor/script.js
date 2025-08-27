@@ -145,8 +145,18 @@ function refreshBlockList() {
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
       if (draggedIndex !== null && draggedIndex !== i) {
-        // 常にブロックの上に青い線を表示
-        showDropIndicator(item, "before");
+        // マウス位置に基づいてドロップ位置を決定
+        const rect = item.getBoundingClientRect();
+        const mouseY = e.clientY;
+        const itemCenterY = rect.top + rect.height / 2;
+
+        if (mouseY < itemCenterY) {
+          // マウスが要素の上半分にある場合は要素の上に表示
+          showDropIndicator(item, "before");
+        } else {
+          // マウスが要素の下半分にある場合は要素の下に表示
+          showDropIndicator(item, "after");
+        }
       }
     };
 
@@ -164,8 +174,18 @@ function refreshBlockList() {
       e.preventDefault();
       hideDropIndicator();
       if (draggedIndex !== null && draggedIndex !== i) {
-        // 常にブロックの上にドロップ（ブロックの位置に移動）
-        moveBlock(draggedIndex, i);
+        // マウス位置に基づいてドロップ位置を決定
+        const rect = item.getBoundingClientRect();
+        const mouseY = e.clientY;
+        const itemCenterY = rect.top + rect.height / 2;
+
+        if (mouseY < itemCenterY) {
+          // マウスが要素の上半分にある場合は要素の上に移動
+          moveBlock(draggedIndex, i);
+        } else {
+          // マウスが要素の下半分にある場合は要素の下に移動
+          moveBlock(draggedIndex, i + 1);
+        }
       }
     };
 
@@ -180,15 +200,21 @@ function refreshBlockList() {
  */
 function showDropIndicator(element, position) {
   const indicator = document.getElementById("dropIndicator");
-  const rect = element.getBoundingClientRect();
-  const containerRect = document
-    .getElementById("blockList")
-    .getBoundingClientRect();
+  const container = document.getElementById("blockList");
+
+  // スクロール位置を考慮した位置計算
+  const elementRect = element.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const scrollTop = container.scrollTop;
 
   if (position === "before") {
-    indicator.style.top = rect.top - containerRect.top + "px";
+    // 要素の上端位置を計算（スクロール位置を考慮）
+    const topPosition = elementRect.top - containerRect.top + scrollTop;
+    indicator.style.top = topPosition + "px";
   } else {
-    indicator.style.top = rect.bottom - containerRect.top + "px";
+    // 要素の下端位置を計算（スクロール位置を考慮）
+    const bottomPosition = elementRect.bottom - containerRect.top + scrollTop;
+    indicator.style.top = bottomPosition + "px";
   }
 
   indicator.classList.add("visible");

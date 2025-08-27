@@ -40,6 +40,10 @@ class TrackAPI:
     def get_track_blocks(self):
         """トラックブロックの一覧を取得（現在のコードブロックデータで解決）"""
         try:
+            # 最新のコードブロックデータを取得
+            if self.p5_player_instance:
+                self.code_blocks = self.p5_player_instance.code_blocks
+
             # トラックブロックを現在のコードブロックデータで解決
             resolved_lanes = []
             for lane_index, lane_blocks in enumerate(self.track_blocks):
@@ -99,6 +103,10 @@ class TrackAPI:
 
     def save_track_blocks(self, blocks):
         """トラックブロックを保存（参照データのみ）"""
+        # 最新のコードブロックデータを取得
+        if self.p5_player_instance:
+            self.code_blocks = self.p5_player_instance.code_blocks
+
         # 参照データのみを保存（name, codeは除外）
         reference_lanes = []
         for lane_index, lane_blocks in enumerate(blocks):
@@ -173,6 +181,10 @@ class TrackAPI:
             # P5Playerインスタンスにも新しいレーンを反映
             if self.p5_player_instance:
                 self.p5_player_instance.track_blocks = self.track_blocks
+
+        # 最新のコードブロックデータを取得
+        if self.p5_player_instance:
+            self.code_blocks = self.p5_player_instance.code_blocks
 
         # 参照データのみを保存
         reference_block = {

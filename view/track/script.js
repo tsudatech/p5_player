@@ -167,10 +167,12 @@ function updateClickToPlay() {
 function loadTrackBlocks() {
   // Python側からトラックブロックを読み込み
   if (window.pywebview && window.pywebview.api) {
+    console.log("Loading track blocks from Python...");
     window.pywebview.api
       .get_track_blocks()
       .then((data) => {
         try {
+          console.log("Received track data:", data);
           trackBlocks = data.track_blocks || [[]]; // デフォルトで1つのレーン
           currentBpm = data.bpm || 120;
           // delayの値が設定されている場合のみ更新（ユーザーが変更した値を保持）
@@ -284,6 +286,7 @@ function saveTrackBlocks() {
 
 function renderTrackBlocks() {
   try {
+    console.log("Rendering track blocks:", trackBlocks);
     // 各レーンをレンダリング
     lanes.forEach((lane, laneIndex) => {
       renderLaneBlocks(laneIndex);
@@ -852,8 +855,14 @@ window.addTrackBlock = function (blockData, laneIndex = 0) {
       .then((result) => {
         if (result.status === "success") {
           // 追加後に最新のデータを再読み込み
+          console.log("Block added successfully, reloading track blocks...");
           loadTrackBlocks();
+        } else {
+          console.error("Failed to add block:", result);
         }
+      })
+      .catch((error) => {
+        console.error("Error adding block:", error);
       });
   }
 };
