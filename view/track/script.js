@@ -11,6 +11,7 @@ let selectedTrackIndexes = []; // 各レーンの選択されたブロックイ�
 let playingTrackIndexes = []; // 各レーンの現在再生中のブロックインデックス
 let clickToPlayEnabled = false;
 let lanes = []; // レーンの情報を格納
+let baseBlockWidthFor8Bars = null; // 8bars時の基準横幅（CSSの現在幅を採用）
 
 // 初期化
 document.addEventListener("DOMContentLoaded", function () {
@@ -357,6 +358,57 @@ function createTrackBlockElement(block, index, laneIndex) {
   blockDiv.dataset.laneIndex = laneIndex;
   blockDiv.draggable = true;
 
+  // 8barsの基準幅を初回だけ採取し、barsに応じて横幅をスケール（8の倍数ごとにgapも加算）
+  try {
+    if (baseBlockWidthFor8Bars === null) {
+      const temp = document.createElement("div");
+      temp.className = className;
+      temp.style.visibility = "hidden";
+      temp.style.position = "absolute";
+      temp.style.left = "-99999px";
+      temp.textContent = "\u00A0"; // non-breaking space
+      document.body.appendChild(temp);
+      baseBlockWidthFor8Bars = temp.offsetWidth || 0;
+      document.body.removeChild(temp);
+    }
+    const bars = block.bars || 8;
+    if (baseBlockWidthFor8Bars && bars) {
+      // laneのgap(px)を取得（なければデフォルト8px）
+      let laneGapPx = 8;
+      const laneEl = document.getElementById(`track-lane-${laneIndex}`);
+      if (laneEl) {
+        const cs = getComputedStyle(laneEl);
+        const gapStr = cs.columnGap || cs.gap || "8px";
+        const parsed = parseInt(gapStr, 10);
+        if (!Number.isNaN(parsed)) laneGapPx = parsed;
+      }
+      let widthPx;
+      if (bars === 4) {
+        // 4barsは 8barsの半分からmargin(=gap)の半分を引く
+        widthPx = Math.max(
+          1,
+          Math.round(baseBlockWidthFor8Bars / 2 - laneGapPx / 2)
+        );
+      } else {
+        // 基準幅をbars/8でスケール
+        const scaleWidth = (baseBlockWidthFor8Bars * bars) / 8;
+        // 8の倍数ごと（区切り数-1）でgapを加算
+        const segmentCount = Math.floor(bars / 8);
+        const additionalGaps = Math.max(0, segmentCount - 1);
+        widthPx = Math.max(
+          1,
+          Math.round(scaleWidth + laneGapPx * additionalGaps)
+        );
+      }
+      blockDiv.style.flex = `0 0 ${widthPx}px`;
+      blockDiv.style.width = `${widthPx}px`;
+      // barsが7以下の場合はmin-widthを外す
+      if (bars <= 7) {
+        blockDiv.style.minWidth = "0";
+      }
+    }
+  } catch (e) {}
+
   const nameDiv = document.createElement("div");
   nameDiv.className = "track-block-name";
   nameDiv.textContent = block.name || "Block";
@@ -381,7 +433,29 @@ function createTrackBlockElement(block, index, laneIndex) {
     updateBlockBars(index, parseInt(e.target.value) || 8, laneIndex);
   };
 
-  barsDiv.appendChild(barsLabel);
+  // 仕様:
+  // - 8bars の場合は ellipsis を無効化（フル表示）
+  // - 7bars 以下の場合は bars のラベル文字を表示しない
+  const barsVal = block.bars || 8;
+  if (barsVal === 8) {
+    // name/duration/bars label の省略表示を解除
+    nameDiv.style.whiteSpace = "normal";
+    nameDiv.style.overflow = "visible";
+    nameDiv.style.textOverflow = "clip";
+
+    durationDiv.style.whiteSpace = "normal";
+    durationDiv.style.overflow = "visible";
+    durationDiv.style.textOverflow = "clip";
+
+    barsLabel.style.whiteSpace = "normal";
+    barsLabel.style.overflow = "visible";
+    barsLabel.style.textOverflow = "clip";
+  }
+
+  // bars ラベルの表示制御（7以下は非表示）
+  if (barsVal > 7) {
+    barsDiv.appendChild(barsLabel);
+  }
   barsDiv.appendChild(barsInput);
 
   const removeButton = document.createElement("button");

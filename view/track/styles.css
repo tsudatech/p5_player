@@ -123,6 +123,8 @@ input,
   border-radius: 4px;
   border: 1px dashed #475569;
   flex-shrink: 0;
+  overflow-x: auto; /* allow horizontal scroll to prevent spill */
+  overflow-y: hidden;
 }
 
 .track-block {
@@ -137,6 +139,8 @@ input,
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
+  box-sizing: border-box; /* include padding/border in width */
+  max-width: 100%; /* clamp to lane width */
 }
 
 .track-block:hover {
@@ -181,30 +185,49 @@ input,
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 70px;
+  /* Ensure it uses available block width */
+  width: 100%;
+  max-width: 100%;
+  display: block;
 }
 
 .track-block-duration {
   font-size: 10px;
   opacity: 0.7;
   margin-bottom: 4px;
+  /* Ellipsize when too narrow */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: center;
 }
 
 .track-block-bars {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   font-size: 10px;
+  width: 100%;
+  min-width: 0;
 }
 
 .track-block-bars label {
   font-size: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Do not stretch; keep natural width next to input */
+  flex: 0 0 auto;
 }
 
 .track-block-bars input {
-  width: 40px;
+  width: 32px;
   height: 18px;
   font-size: 10px;
   padding: 1px 2px;
+  flex: 0 0 auto;
 }
 
 .track-block-remove {
