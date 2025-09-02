@@ -33,6 +33,20 @@ window.addEventListener("pywebviewready", function () {
   setInterval(checkRenderWindowSize, 1000);
 });
 
+function clearAllPlayIntervals() {
+  playIntervals.forEach((intervalArray, laneIndex) => {
+    if (Array.isArray(intervalArray)) {
+      intervalArray.forEach((interval) => {
+        if (interval) {
+          clearTimeout(interval);
+        }
+      });
+    } else if (intervalArray) {
+      clearTimeout(intervalArray);
+    }
+  });
+}
+
 function initializeControls() {
   const playButton = document.getElementById("play-button");
   const stopButton = document.getElementById("stop-button");
@@ -490,6 +504,9 @@ function startPlayback() {
     return;
   }
 
+  // 既存のタイマーをすべてクリア
+  clearAllPlayIntervals();
+
   isPlaying = true;
 
   // エディタの単一iframeをクリア
@@ -502,19 +519,6 @@ function startPlayback() {
   // 各レーンの再生状態を初期化
   currentPlayingIndexes = [];
   playIntervals = [];
-
-  trackBlocks.forEach((laneBlocks, laneIndex) => {
-    // 選択されたブロックがある場合はそこから開始、なければ最初から
-    let startIndex = 0;
-    if (
-      selectedTrackIndexes[laneIndex] !== null &&
-      selectedTrackIndexes[laneIndex] < laneBlocks.length
-    ) {
-      startIndex = selectedTrackIndexes[laneIndex];
-    }
-    currentPlayingIndexes[laneIndex] = startIndex;
-    playIntervals[laneIndex] = null;
-  });
 
   const playButton = document.getElementById("play-button");
   const stopButton = document.getElementById("stop-button");
@@ -534,10 +538,87 @@ function startPlayback() {
   }
 }
 
+function scheduleLanePlayback(laneIndex) {
+  const laneBlocks = trackBlocks[laneIndex];
+  if (!laneBlocks || laneBlocks.length === 0) {
+    return;
+  }
+
+  // 選択されたブロックがある場合はそこから開始、なければ最初から
+  let startIndex = 0;
+  if (
+    selectedTrackIndexes[laneIndex] !== null &&
+    selectedTrackIndexes[laneIndex] < laneBlocks.length
+  ) {
+    startIndex = selectedTrackIndexes[laneIndex];
+  }
+
+  // 各ブロックの開始時刻を計算
+  let currentTime = 0;
+  for (
+    let blockIndex = startIndex;
+    blockIndex < laneBlocks.length;
+    blockIndex++
+  ) {
+    const block = laneBlocks[blockIndex];
+
+    // このブロックの開始タイマーを設定
+    const timeoutId = setTimeout(() => {
+      if (isPlaying) {
+        // 現在再生中のブロックインデックスを更新
+        playingTrackIndexes[laneIndex] = blockIndex;
+
+        // このレーンのiframeのみを更新
+        if (window.pywebview && window.pywebview.api) {
+          updateSingleLane(laneIndex, block);
+        }
+
+        // このレーンのみ再描画して再生状態を更新
+        renderLaneBlocks(laneIndex);
+      }
+    }, currentTime);
+
+    // タイマーIDを保存
+    if (!playIntervals[laneIndex]) {
+      playIntervals[laneIndex] = [];
+    }
+    playIntervals[laneIndex].push(timeoutId);
+
+    // 次のブロックの開始時刻を計算
+    currentTime += block.duration;
+  }
+
+  // レーン終了時のタイマーを設定
+  const endTimeoutId = setTimeout(() => {
+    if (isPlaying) {
+      // このレーンの再生が終了
+      playingTrackIndexes[laneIndex] = null;
+
+      // このレーンのiframeをクリア
+      if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.clear_specific_lane(laneIndex).catch((error) => {
+          console.error(`Error clearing lane ${laneIndex + 1}:`, error);
+        });
+      }
+
+      renderLaneBlocks(laneIndex);
+
+      // 全レーンの再生が終了したかチェック
+      checkAllLanesFinished();
+    }
+  }, currentTime);
+
+  // 終了タイマーも保存
+  if (!playIntervals[laneIndex]) {
+    playIntervals[laneIndex] = [];
+  }
+  playIntervals[laneIndex].push(endTimeoutId);
+}
+
 function startAllLanes() {
   trackBlocks.forEach((laneBlocks, laneIndex) => {
     if (laneBlocks.length > 0) {
-      playLaneNextBlock(laneIndex);
+      scheduleLanePlayback(laneIndex);
     }
   });
 }
@@ -554,12 +635,8 @@ function stopPlayback() {
   stopButton.disabled = true;
 
   // 各レーンのタイマーをクリア
-  playIntervals.forEach((interval, laneIndex) => {
-    if (interval) {
-      clearTimeout(interval);
-      playIntervals[laneIndex] = null;
-    }
-  });
+  clearAllPlayIntervals();
+  playIntervals = [];
 
   // 全レーンのiframeをクリア
   if (window.pywebview && window.pywebview.api) {
@@ -570,48 +647,6 @@ function stopPlayback() {
 
   // レーンを再描画して再生状態をリセット
   renderTrackBlocks();
-}
-
-function playLaneNextBlock(laneIndex) {
-  const laneBlocks = trackBlocks[laneIndex];
-  const currentIndex = currentPlayingIndexes[laneIndex];
-
-  if (!isPlaying || !laneBlocks || currentIndex >= laneBlocks.length) {
-    // このレーンの再生が終了
-    playingTrackIndexes[laneIndex] = null;
-
-    // このレーンのiframeをクリア
-    if (window.pywebview && window.pywebview.api) {
-      window.pywebview.api.clear_specific_lane(laneIndex).catch((error) => {
-        console.error(`Error clearing lane ${laneIndex + 1}:`, error);
-      });
-    }
-
-    renderLaneBlocks(laneIndex);
-
-    // 全レーンの再生が終了したかチェック
-    checkAllLanesFinished();
-    return;
-  }
-
-  // 現在再生中のブロックインデックスを更新（このレーンのみ）
-  playingTrackIndexes[laneIndex] = currentIndex;
-  const block = laneBlocks[currentIndex];
-
-  // 単一レーンの再生（他のレーンに影響しない）
-  if (window.pywebview && window.pywebview.api) {
-    // このレーンのiframeのみを更新
-    updateSingleLane(laneIndex, block);
-  }
-
-  // このレーンのみ再描画して再生状態を更新
-  renderLaneBlocks(laneIndex);
-
-  // 次のブロックの再生をスケジュール（このレーンのみ）
-  playIntervals[laneIndex] = setTimeout(() => {
-    currentPlayingIndexes[laneIndex]++;
-    playLaneNextBlock(laneIndex);
-  }, block.duration);
 }
 
 function updateSingleLane(laneIndex, block) {
